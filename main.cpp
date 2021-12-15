@@ -1,13 +1,15 @@
-/* 基于智能指针实现双向链表，总计 60 分 */
+/* 基于智能指针实现双向链表 */
 #include <cstdio>
 #include <memory>
 
 struct Node {
-    std::shared_ptr<Node> next;  // 能否改进为 unique_ptr？   20 分
-    std::shared_ptr<Node> prev;  // 这会造成什么问题？请修复  15 分
+    // 这两个指针会造成什么问题？请修复
+    std::shared_ptr<Node> next;
+    std::shared_ptr<Node> prev;
+
     int value;
 
-    Node(int value) : value(value) {}  // 有什么可以改进的？   5 分
+    Node(int value) : value(value) {}  // 有什么可以改进的？
 
     void insert(int value) {
         auto node = std::make_shared<Node>(value);
@@ -26,6 +28,10 @@ struct Node {
         if (next)
             next->prev = prev;
     }
+
+    ~Node() {
+        printf("~Node()\n");   // 应输出多少次？为什么少了？
+    }
 };
 
 struct List {
@@ -33,8 +39,8 @@ struct List {
 
     List() = default;
 
-    List(List const &) = default;             // 请实现拷贝构造函数 15 分
-    List &operator=(List const &) = default;  // 请实现拷贝赋值函数  5 分
+    List(List const &) = default;             // 请实现拷贝构造函数（深拷贝）
+    List &operator=(List const &) = default;  // 请实现拷贝赋值函数（深拷贝）
 
     List(List &&) = default;
     List &operator=(List &&) = default;
@@ -101,11 +107,13 @@ int main() {
 
     List b = a;
 
-    printf("%d\n", a.pop_front());  // 1
-    printf("%d\n", a.pop_front());  // 4
+    a.at(3)->erase();
 
-    a.print();   // [ 2 8 5 7 ]
+    a.print();   // [ 1 4 2 5 7 ]
     b.print();   // [ 1 4 2 8 5 7 ]
+
+    b = {};
+    a = {};
 
     return 0;
 }
