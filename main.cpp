@@ -39,8 +39,12 @@ struct List {
 
     List() = default;
 
-    List(List const &) = default;             // 请实现拷贝构造函数（深拷贝）
-    List &operator=(List const &) = default;  // 请实现拷贝赋值函数（深拷贝）
+    List(List const &other) {
+        head = other.head;  // 这是浅拷贝！
+        // 请实现拷贝构造函数为 **深拷贝**
+    }
+
+    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
 
     List(List &&) = default;
     List &operator=(List &&) = default;
