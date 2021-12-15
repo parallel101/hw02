@@ -6,6 +6,7 @@ struct Node {
     // 这两个指针会造成什么问题？请修复
     std::shared_ptr<Node> next;
     std::shared_ptr<Node> prev;
+    // 如果能改成 unique_ptr 就更好了!
 
     int value;
 
