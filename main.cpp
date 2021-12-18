@@ -1,52 +1,72 @@
-/* åŸºäºæ™ºèƒ½æŒ‡é’ˆå®ç°åŒå‘é“¾è¡¨ */
+/* »ùÓÚÖÇÄÜÖ¸ÕëÊµÏÖË«ÏòÁ´±í */
 #include <cstdio>
 #include <memory>
 
 struct Node {
-    // è¿™ä¸¤ä¸ªæŒ‡é’ˆä¼šé€ æˆä»€ä¹ˆé—®é¢˜ï¼Ÿè¯·ä¿®å¤
-    std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
-    // å¦‚æœèƒ½æ”¹æˆ unique_ptr å°±æ›´å¥½äº†!
+	// ÕâÁ½¸öÖ¸Õë»áÔì³ÉÊ²Ã´ÎÊÌâ£¿ÇëĞŞ¸´
+	std::unique_ptr<Node> next;
+	Node* prev;
+    
+	// Èç¹ûÄÜ¸Ä³É unique_ptr ¾Í¸üºÃÁË!
 
     int value;
 
-    Node(int value) : value(value) {}  // æœ‰ä»€ä¹ˆå¯ä»¥æ”¹è¿›çš„ï¼Ÿ
+    Node(int value) : next(nullptr),prev(NULL),value(value) {
+		
+	}  // ÓĞÊ²Ã´¿ÉÒÔ¸Ä½øµÄ£¿
 
     void insert(int value) {
-        auto node = std::make_shared<Node>(value);
-        node->value = value;
-        node->next = next;
-        node->prev = prev;
-        if (prev)
-            prev->next = node;
-        if (next)
-            next->prev = node;
+        auto node = std::unique_ptr<Node>(new Node(value));
+        node->next = std::move(next);
+
+		if (node->next)
+		{
+			node->prev = node->next->prev;
+			node->next->prev = node.get();
+		}
+		next = std::move(node);
     }
 
     void erase() {
-        if (prev)
-            prev->next = next;
-        if (next)
-            next->prev = prev;
+		
+		if (next)
+		{
+			next->prev = prev;
+		}
+		if (prev)
+		{
+			prev->next = std::move(next);
+		}
+		
     }
 
     ~Node() {
-        printf("~Node()\n");   // åº”è¾“å‡ºå¤šå°‘æ¬¡ï¼Ÿä¸ºä»€ä¹ˆå°‘äº†ï¼Ÿ
+        printf("~Node()\n");    // Ó¦Êä³ö¶àÉÙ´Î£¿ÎªÊ²Ã´ÉÙÁË£¿
     }
 };
 
 struct List {
-    std::shared_ptr<Node> head;
+	std::unique_ptr<Node> head;
 
     List() = default;
 
     List(List const &other) {
-        printf("List è¢«æ‹·è´ï¼\n");
-        head = other.head;  // è¿™æ˜¯æµ…æ‹·è´ï¼
-        // è¯·å®ç°æ‹·è´æ„é€ å‡½æ•°ä¸º **æ·±æ‹·è´**
+        printf("List  ±»¿½±´\n");
+		head.reset();
+		if (!other.front())return;
+		Node* pOtherNodeFront = other.front();
+		head = std::unique_ptr<Node>(new Node(pOtherNodeFront->value));
+		Node* pthisNodeFront = head.get();
+		while (pOtherNodeFront->next)
+		{
+			pthisNodeFront->insert(pOtherNodeFront->next->value);
+			pthisNodeFront = pthisNodeFront->next.get();
+			pOtherNodeFront = pOtherNodeFront->next.get();
+		}
+		// ÇëÊµÏÖ¿½±´¹¹Ôìº¯ÊıÎª **Éî¿½±´**
     }
 
-    List &operator=(List const &) = delete;  // ä¸ºä»€ä¹ˆåˆ é™¤æ‹·è´èµ‹å€¼å‡½æ•°ä¹Ÿä¸å‡ºé”™ï¼Ÿ
+    List &operator=(List const &) = delete;  // ÎªÊ²Ã´É¾³ı¿½±´¸³Öµº¯ÊıÒ²²»³ö´í£¿
 
     List(List &&) = default;
     List &operator=(List &&) = default;
@@ -57,28 +77,36 @@ struct List {
 
     int pop_front() {
         int ret = head->value;
-        head = head->next;
+        head = std::move(head->next);
         return ret;
     }
 
     void push_front(int value) {
-        auto node = std::make_shared<Node>(value);
-        node->next = head;
-        if (head)
-            head->prev = node;
-        head = node;
+        auto node = std::unique_ptr<Node>(new Node(value));
+        node->next = std::move(head);
+		if (node->next)
+		{
+			node->next->prev = node.get();
+		}
+		head = std::move(node);
     }
 
     Node *at(size_t index) const {
         auto curr = front();
         for (size_t i = 0; i < index; i++) {
-            curr = curr->next.get();
+			if (!curr)
+			{
+				printf("Error:Exceed List Volumn!/n");
+				return NULL;
+			}	
+			curr = curr->next.get();
+			
         }
         return curr;
     }
 };
 
-void print(List lst) {  // æœ‰ä»€ä¹ˆå€¼å¾—æ”¹è¿›çš„ï¼Ÿ
+void print(List lst) {  
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
