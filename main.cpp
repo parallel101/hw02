@@ -41,6 +41,7 @@ struct List {
     List() = default;
 
     List(List const &other) {
+        printf("List 被拷贝！\n");
         head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
     }
@@ -75,23 +76,15 @@ struct List {
         }
         return curr;
     }
-
-    size_t size() const {
-        size_t count = 0;
-        for (auto curr = front(); curr; curr = curr->next.get()) {
-            count++;
-        }
-        return count;
-    }
-
-    void print() const {
-        printf("[");
-        for (auto curr = front(); curr; curr = curr->next.get()) {
-            printf(" %d", curr->value);
-        }
-        printf(" ]\n");
-    }
 };
+
+void print(List lst) {  // 有什么值得改进的？
+    printf("[");
+    for (auto curr = lst.front(); curr; curr = curr->next.get()) {
+        printf(" %d", curr->value);
+    }
+    printf(" ]\n");
+}
 
 int main() {
     List a;
@@ -104,18 +97,18 @@ int main() {
     a.push_front(4);
     a.push_front(1);
 
-    a.print();   // [ 1 4 9 2 8 5 7 ]
+    print(a);   // [ 1 4 9 2 8 5 7 ]
 
     a.at(2)->erase();
 
-    a.print();   // [ 1 4 2 8 5 7 ]
+    print(a);   // [ 1 4 2 8 5 7 ]
 
     List b = a;
 
     a.at(3)->erase();
 
-    a.print();   // [ 1 4 2 5 7 ]
-    b.print();   // [ 1 4 2 8 5 7 ]
+    print(a);   // [ 1 4 2 5 7 ]
+    print(b);   // [ 1 4 2 8 5 7 ]
 
     b = {};
     a = {};
