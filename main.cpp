@@ -1,7 +1,6 @@
 /* 基于智能指针实现双向链表 */
 #include <cstdio>
 #include <memory>
-#include <stdexcept>
 
 struct Node {
     // 这两个指针会造成什么问题？请修复
@@ -45,12 +44,12 @@ struct List {
 
     List(List const &other) {
         printf("List 被拷贝！\n");
-        // head = other.head;  这是浅拷贝！
+        // head = other.head; // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
 
         auto curr=other.front();
         // tail insertion step 1. go to the tail
-        while (curr->next.get()) {
+        while (curr->next) {
             curr = curr->next.get();
         }
         // tail insertion step 2. traverse from tail to head
@@ -60,13 +59,12 @@ struct List {
         }
     }
 
-    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？ 
+    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
 
     List(List &&) = default;
     List &operator=(List &&) = default;
 
     Node *front() const {
-        
         return head.get();
     }
 
@@ -78,7 +76,7 @@ struct List {
 
     void push_front(int value) {
         auto node = std::make_unique<Node>(value);
-        if (head.get())
+        if (head)
             head->prev = node.get();
         node->next = std::move(head);
         head = std::move(node);
