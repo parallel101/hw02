@@ -82,7 +82,7 @@ struct List {
     }
 
     void push_front(int value) {
-        auto node = std::unique_ptr<Node>(new Node(value));
+        auto node = std::make_unique<Node>(value);
         node->next = std::move(head);
 		if (node->next)
 		{
