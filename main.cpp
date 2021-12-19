@@ -31,6 +31,7 @@ struct Node {
     }
 
     ~Node() {
+        // Node 构建多少次，就应该输出多少次，如果出现指针未释放，则会减少．
         printf("~Node()\n");   // 应输出多少次？为什么少了？
     }
 };
@@ -113,7 +114,9 @@ int main() {
     a.at(2)->erase();
 
     print(a);   // [ 1 4 2 8 5 7 ]
-
+    
+    // 编译器调用拷贝构造，然后使用移动赋值函数
+    // List b = List{a};
     List b = a;
 
     a.at(3)->erase();
