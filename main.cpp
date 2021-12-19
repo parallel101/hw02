@@ -5,8 +5,8 @@
 
 struct Node {
     // 这两个指针会造成什么问题？请修复   会造成循环引用，内存泄漏
-    std::shared_ptr<Node> next;
-    std::weak_ptr<Node> prev;
+    std::unique_ptr<Node> next;
+    Node* prev;
     // 如果能改成 unique_ptr 就更好了!
 
     int value;
@@ -14,25 +14,23 @@ struct Node {
     Node(int value) : value(value) {}  // 有什么可以改进的？
 
     void insert(int value) {
-        auto node = std::make_shared<Node>(value);
-        node->value = value;
-        node->next = next;
-        node->prev = prev;
-        if (!prev.expired()){
-            std::shared_ptr<Node> tmp=prev.lock();
-            tmp->next=node;
-        }
-        if (next)
-            next->prev = node;
+        std::unique_ptr<Node> node=std::make_unique<Node>(value);
+        node->prev=this;
+
+        if(next){
+            node->next=std::move(next);
+            node->next->prev=node.get();
+        }        
+        next=std::move(node);
     }
 
     void erase() {
-        if (!prev.expired()){
-            std::shared_ptr<Node> tmp=prev.lock();
-            tmp->next=next;
-        }
-        if (next)
+        if (next){
             next->prev = prev;
+        }
+        if (prev){
+            prev->next=std::move(next);
+        }
     }
 
     ~Node() {
@@ -41,7 +39,7 @@ struct Node {
 };
 
 struct List {
-    std::shared_ptr<Node> head;
+    std::unique_ptr<Node> head;
 
     List() = default;
 
@@ -51,18 +49,26 @@ struct List {
         // 请实现拷贝构造函数为 **深拷贝**
         
         // 这里为了实现深拷贝，不能够简单通过other里的节点的get方法提取出raw pointer，需要通过raw pointer指向的值构造智能指针
-        std::shared_ptr<Node> tmp=std::shared_ptr<Node>(new Node(other.front()->value));
-        head=tmp;
-        std::shared_ptr<Node> work=head;
-        std::cout<< work->value << "!!"<< std::endl;
-
-        for (auto curr = other.front()->next.get(); curr; curr = curr->next.get()) {
-            tmp=std::shared_ptr<Node>(new Node(curr->value));
-            work->next=tmp;
-            tmp->prev=work;
-            work=tmp;
-            std::cout<< work->value << "!!"<< std::endl;
+        
+        head.reset();
+        if(!other.front()){
+            return;
         }
+        std::unique_ptr<Node> new_head=std::make_unique<Node>(other.front()->value);
+        // std::cout<< new_head->value << std::endl;
+        Node* work=new_head.get();
+        Node* other_raw=other.front();
+
+        while(other_raw -> next){
+            std::unique_ptr<Node> new_ptr=std::make_unique<Node>(other_raw->next.get()->value);
+            new_ptr->prev=work;
+            work->next=std::move(new_ptr);
+
+            other_raw=other_raw->next.get();
+            work=work->next.get();
+            // std::cout<< work->value << std::endl;
+        }
+        head=std::move(new_head);
     }
 
     List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？编译器会使用拷贝初始化（上面那个函数）
@@ -76,16 +82,16 @@ struct List {
 
     int pop_front() {
         int ret = head->value;
-        head = head->next;
+        head=std::move(head->next);
         return ret;
     }
 
     void push_front(int value) {
-        auto node = std::make_shared<Node>(value);
-        node->next = head;
+        auto node = std::make_unique<Node>(value);
         if (head)
-            head->prev = node;
-        head = node;
+            head->prev = node.get();
+        node->next = std::move(head);
+        head = std::move(node);
     }
 
     Node *at(size_t index) const {
@@ -97,7 +103,7 @@ struct List {
     }
 };
 
-void print(List& lst) {  // 有什么值得改进的？ 传引用
+void print(List const & lst) {  // 有什么值得改进的？ 传引用
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
