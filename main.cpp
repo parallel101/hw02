@@ -5,27 +5,36 @@
 struct Node {
     // 这两个指针会造成什么问题？请修复
     std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
+    std::weak_ptr<Node> prev;
     // 如果能改成 unique_ptr 就更好了!
+
+    std::unique_ptr<Node> next;
+    Node* prev;
 
     int value;
 
-    Node(int value) : value(value) {}  // 有什么可以改进的？
+    explicit Node(int value) : value(value) {}  // 有什么可以改进的？
 
     void insert(int value) {
         auto node = std::make_shared<Node>(value);
         node->value = value;
         node->next = next;
         node->prev = prev;
-        if (prev)
-            prev->next = node;
+        if (!prev.expired()) {
+            std::shared_ptr<Node> tmp = prev.lock();
+            tmp->next = node;
+        }
+
         if (next)
             next->prev = node;
     }
 
     void erase() {
-        if (prev)
-            prev->next = next;
+        if (!prev.expired()) {
+            std::shared_ptr<Node> tmp = prev.lock();
+            tmp->next = next;
+        }
+
         if (next)
             next->prev = prev;
     }
@@ -42,8 +51,13 @@ struct List {
 
     List(List const &other) {
         printf("List 被拷贝！\n");
-        head = other.head;  // 这是浅拷贝！
+        // head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
+        auto ohead = other.head;
+        head = ohead;
+        while(ohead->next) {
+            ohead = ohead->next;
+        }
     }
 
     List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
@@ -78,7 +92,7 @@ struct List {
     }
 };
 
-void print(List lst) {  // 有什么值得改进的？
+void print(const List &lst) {  // 有什么值得改进的？
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
