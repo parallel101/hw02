@@ -1,41 +1,79 @@
+
 #pragma once
 #include <memory>
 #include <utility>
 
 template <typename T>
 struct Node {
+	using NodeUPtr = std::unique_ptr<Node<T>>;
+	using NodePtr = Node<T>*;
 	// 这两个指针会造成什么问题？请修复
-	std::unique_ptr<Node> next = nullptr;
-	Node* prev = nullptr;
+	NodeUPtr next = nullptr;
+	NodePtr prev = nullptr;
 	// 如果能改成 unique_ptr 就更好了!
 
 	T value;
 
-	template<typename TArg>
-	Node(TArg&& arg) : value(T(std::forward<TArg>(arg))) {}    // 有什么可以改进的？
+	Node() {}
 
 	template<typename TArg>
-	void insertAsSucc(TArg&& firstArg) {
-		auto node = std::make_unique<Node<T>>(T(std::forward<TArg>(firstArg)));
-		if (next) {
-			next->prev = node.get();
-			node->next = std::move(next);
-		}
-		node->prev = this;
-		this->next = std::move(node);
+	Node(TArg&& arg, NodePtr p = nullptr, NodeUPtr n = nullptr) : value(T(std::forward<TArg>(arg))), prev(p), next(std::move(n)) {}    // 有什么可以改进的？
+
+	template<typename TArg>
+	void insertAsPrev(TArg&& firstArg) {
+		auto node = std::make_unique<Node<T>>(std::forward<TArg>(firstArg), prev, std::move(prev->next));
+		prev->next = std::move(node);
+		prev = (prev->next).get();    //设置逆向链接
 	}
 
 	template<typename FirstTArg, typename ...RestTArgs>
-	void insertAsSucc(FirstTArg&& firstArg, RestTArgs&& ...arg) {
-		insertAsSucc(std::forward<FirstTArg>(firstArg));
-		insertAsSucc(std::forward<RestTArgs>(arg)...);
+	void insertAsPrev(FirstTArg&& firstArg, RestTArgs&& ...args) {
+		insertAsPrev(std::forward<FirstTArg>(firstArg));
+		insertAsPrev(std::forward<RestTArgs>(args)...);
+	}
+
+	template<typename TArg>
+	void insertAsPrevInverted(TArg&& firstArg) {
+		auto node = std::make_unique<Node<T>>(std::forward<TArg>(firstArg), prev, std::move(prev->next));
+		prev->next = std::move(node);
+		prev = (prev->next).get();    //设置逆向链接
+	}
+
+	template<typename FirstTArg, typename ...RestTArgs>
+	void insertAsPrevInverted(FirstTArg&& firstArg, RestTArgs&& ...args) {
+		insertAsPrev(std::forward<FirstTArg>(firstArg));
+		insertAsPrev(std::forward<RestTArgs>(args)...);
+	}
+
+	template<typename TArg>
+	void insertAsNext(TArg&& firstArg) {
+		auto node = std::make_unique<Node<T>>(std::forward<TArg>(firstArg), this, std::move(next));
+		node->next->prev = node.get();  //设置逆向链接
+		next = std::move(node);
+	}
+
+	template<typename FirstTArg, typename ...RestTArgs>
+	void insertAsNext(FirstTArg&& firstArg, RestTArgs&& ...args) {
+		insertAsNext(std::forward<FirstTArg>(firstArg));
+		insertAsNext(std::forward<RestTArgs>(args)...);
+	}
+
+	template<typename TArg>
+	void insertAsNextInverted(TArg&& firstArg) {
+		auto node = std::make_unique<Node<T>>(std::forward<TArg>(firstArg), this, std::move(next));
+		node->next->prev = node.get();  //设置逆向链接
+		next = std::move(node);
+	}
+
+	template<typename FirstTArg, typename ...RestTArgs>
+	void insertAsNextInverted(FirstTArg&& firstArg, RestTArgs&& ...args) {
+		insertAsNextInverted(std::forward<RestTArgs>(args)...);
+		insertAsNextInverted(std::forward<FirstTArg>(firstArg));
 	}
 
 	void erase() {
-		if (next)
-			next->prev = prev;
-		if (prev)
-			prev->next = std::move(next);
+		next->prev = prev;
+		prev->next = std::move(next);
 	}
 
 	~Node() {
@@ -46,19 +84,72 @@ struct Node {
 
 template <typename T>
 struct List {
-	using NodePtr = std::unique_ptr<Node<T>>;
-	NodePtr head = nullptr;
+	using NodeUPtr = std::unique_ptr<Node<T>>;
+	using NodePtr = Node<T>*;
+	//设置头尾哨兵，保证前向后向指针始终有效
+	NodeUPtr head = nullptr; //头哨兵
+	NodePtr tail = nullptr;  //尾哨兵
 
-	List() = default;
+
+	class ListIterator
+	{
+	public:
+		ListIterator(NodePtr curr) : current(curr) { }
+
+		bool operator!= (const ListIterator& other) const {
+			return current != other.current;
+		}
+
+		const T& operator* () const {
+			return current->value;
+		}
+
+		const ListIterator& operator++ () {
+			current = (current->next).get();
+			return *this;
+		}
+
+	private:
+		NodePtr current;
+	};
+
+	constexpr NodePtr first() const {//首节点
+
+		return head->next.get();
+	}
+
+	constexpr NodePtr last() const { //末节点
+
+		return tail->prev;
+	}
+
+	auto begin() const {
+
+		return ListIterator{ first() };
+	}
+
+	auto end() const {
+
+		return ListIterator{ tail };
+	}
+
+	void init() {
+		head = std::make_unique<Node<T>>();  //创建头哨兵节点
+		tail = (head->next = std::make_unique<Node<T>>()).get();  //创建尾哨兵节点
+		head->next->prev = head.get();  //设置逆向链接
+	}
+
+	List() {
+		init();
+	}
 
 	List(List const& other) {
 		printf("List 被拷贝！\n");
 		// 这是浅拷贝！
 		// 请实现拷贝构造函数为 **深拷贝**
-
-		head = std::make_unique<Node<T>>(other.head->value);
-		for (auto curr = front(), currOther = other.head->next.get(); currOther; curr = curr->next.get(), currOther = currOther->next.get()) {
-			curr->insertAsSucc(currOther->value);
+		init();
+		for (auto&& value : other) {
+			push_end(value);
 		}
 	}
 
@@ -67,27 +158,24 @@ struct List {
 	List(List&&) = default;
 	List& operator=(List&&) = default;
 
-	Node<T>* front() const {
-		return head.get();
-	}
-
-	int pop_front() {
-		int ret = head->value;
-		head = std::move(head->next);
+	T pop_front() {
+		auto ret = first()->value;
+		first()->erase();
 		return ret;
 	}
 
-	void push_front(int value) {
-		auto node = std::make_unique<Node<T>>(value);
-		if (head) {
-			head->prev = node.get();
-			node->next = std::move(head);
-		}
-		head = std::move(node);
+	template<typename FirstTArg, typename ...RestTArgs>
+	void push_end(FirstTArg arg, RestTArgs&& ...args) { //末节点插入
+		tail->insertAsPrevInverted(std::forward<FirstTArg>(arg), std::forward<RestTArgs>(args)...);
 	}
 
-	Node<T>* at(size_t index) const {
-		auto curr = front();
+	template<typename FirstTArg, typename ...RestTArgs>
+	void push_front(FirstTArg arg, RestTArgs&& ...args) {
+		head->insertAsNextInverted(std::forward<FirstTArg>(arg), std::forward<RestTArgs>(args)...);
+	}
+
+	NodePtr at(size_t index) const {
+		auto curr = first();
 		for (size_t i = 0; i < index; i++) {
 			curr = curr->next.get();
 		}
