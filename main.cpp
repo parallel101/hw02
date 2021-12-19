@@ -10,7 +10,10 @@ struct Node {
 
     int value;
 
-    Node(int value) : value(value) {}  // 有什么可以改进的？
+    // 这个构造函数有什么可以改进的？
+    Node(int val) {
+        value = val;
+    }
 
     void insert(int value) {
         auto node = std::make_unique<Node>(value);
