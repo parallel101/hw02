@@ -1,16 +1,17 @@
 /* 基于智能指针实现双向链表 */
 #include <cstdio>
 #include <memory>
+#include <stdexcept>
 
 struct Node {
-    // 这两个指针会造成什么问题？请修复 -> 两个shared_ptr前后节点循环引用
+    // 这两个指针会造成什么问题？请修复
     std::unique_ptr<Node> next;
     Node* prev;
-    // 如果能改成 unique_ptr 就更好了! -> 每个Node的生命周期由上一个节点管理
+    // 如果能改成 unique_ptr 就更好了!
 
     int value;
 
-    explicit Node(int value) : value(value), prev(nullptr) {}  // 有什么可以改进的？-> 声明为explicit 避免implicit casting，初始化prev指针（POD）
+    explicit Node(int value) : value(value), prev(nullptr) {}  // 有什么可以改进的？
 
     void insert(int value) {
         auto node = std::make_unique<Node>(value);
@@ -60,18 +61,16 @@ struct List {
     }
 
     List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？ 
-    // -> l1=l2 => l1=List(l2), 先调用拷贝构造函数，然后调用移动复制函数
 
     List(List &&) = default;
     List &operator=(List &&) = default;
 
     Node *front() const {
-        // TODO: 边界检查
+        
         return head.get();
     }
 
     int pop_front() {
-        // TODO: 边界检查
         int ret = head->value;
         head = std::move(head->next);
         return ret;
@@ -88,14 +87,13 @@ struct List {
     Node *at(size_t index) const {
         auto curr = front();
         for (size_t i = 0; i < index; i++) {
-            // TODO: 边界检查
             curr = curr->next.get();
         }
         return curr;
     }
 };
 
-void print(const List& lst) {  // 有什么值得改进的？-> 传递引用常量，避免拷贝
+void print(const List& lst) {  // 有什么值得改进的？
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
