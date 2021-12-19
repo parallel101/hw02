@@ -5,7 +5,7 @@
 struct Node {
     // 这两个指针会造成什么问题？请修复
     std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
+    std::weak_ptr<Node> prev;
     // 如果能改成 unique_ptr 就更好了!
 
     int value;
@@ -17,15 +17,15 @@ struct Node {
         node->value = value;
         node->next = next;
         node->prev = prev;
-        if (prev)
-            prev->next = node;
+        if (!prev.expired())
+            prev.lock()->next = node;
         if (next)
             next->prev = node;
     }
 
     void erase() {
-        if (prev)
-            prev->next = next;
+        if (!prev.expired())
+            prev.lock()->next = next;
         if (next)
             next->prev = prev;
     }
@@ -42,8 +42,19 @@ struct List {
 
     List(List const &other) {
         printf("List 被拷贝！\n");
-        head = other.head;  // 这是浅拷贝！
+        // head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
+        std::shared_ptr<Node> tmp_ptr = other.head;
+        while(tmp_ptr->next!= nullptr){
+            tmp_ptr = tmp_ptr->next;
+        }
+        while (tmp_ptr != other.head)
+        {
+            // push front?
+             push_front(tmp_ptr->value);
+             tmp_ptr = tmp_ptr->prev.lock();
+        }
+        push_front(tmp_ptr->value);
     }
 
     List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
@@ -78,7 +89,7 @@ struct List {
     }
 };
 
-void print(List lst) {  // 有什么值得改进的？
+void print(List &lst) {  // 有什么值得改进的？
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
