@@ -38,11 +38,31 @@ struct Node {
     }
 };
 
+template <typename T> struct List;
+
+template <typename T>
+struct ListIterator {
+    const List<T>* plist;
+    size_t index;
+
+    ListIterator(const List<T> *plist, size_t index = 0): plist(plist), index(index) {}
+
+    ListIterator& operator+=(int addon) { index+=addon; return *this;}
+
+    Node<T> *operator->() { return plist->at(index); }
+
+    bool operator!=(const ListIterator& rhs) { 
+        return plist != rhs.plist || index != rhs.index;
+    }
+};
+
 template <typename T>
 struct List {
-    typedef Node<T> NodeT;
+    typedef Node<T> NodeType;
+    typedef ListIterator<T> iterator;
 
-    std::unique_ptr<NodeT> head;
+    std::unique_ptr<NodeType> head;
+    size_t size;
 
     List() = default;
 
@@ -68,7 +88,7 @@ struct List {
     List(List &&) = default;
     List &operator=(List &&) = default;
 
-    NodeT *front() const {
+    NodeType *front() const {
         return head.get();
     }
 
@@ -79,19 +99,33 @@ struct List {
     }
 
     void push_front(T value) {
-        auto node = std::make_unique<NodeT>(value);
+        auto node = std::make_unique<NodeType>(value);
         if (head)
             head->prev = node.get();
         node->next = std::move(head);
         head = std::move(node);
     }
 
-    NodeT *at(size_t index) const {
+    NodeType *at(size_t index) const {
         auto curr = front();
         for (size_t i = 0; i < index; i++) {
             curr = curr->next.get();
         }
         return curr;
+    }
+
+    iterator begin() const {
+        return iterator(this);
+    }
+
+    iterator end() const {
+        size_t n = 0;
+        auto curr=front();
+        while (curr) {
+            n ++;
+            curr = curr->next.get();
+        }
+        return iterator(this, n);
     }
 };
 
@@ -100,6 +134,15 @@ void print(const List<T>& lst) {  // 有什么值得改进的？
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
+    }
+    printf(" ]\n");
+}
+
+template <typename T>
+void printIt(const List<T>& lst) {
+    printf("[");
+    for (auto it = lst.begin(); it!=lst.end(); it+=1) {
+        printf(" %d", it->value);
     }
     printf(" ]\n");
 }
@@ -115,18 +158,18 @@ int main() {
     a.push_front(4);
     a.push_front(1);
 
-    print(a);   // [ 1 4 9 2 8 5 7 ]
+    printIt(a);   // [ 1 4 9 2 8 5 7 ]
 
     a.at(2)->erase();
 
-    print(a);   // [ 1 4 2 8 5 7 ]
+    printIt(a);   // [ 1 4 2 8 5 7 ]
 
     List b = a;
 
     a.at(3)->erase();
 
-    print(a);   // [ 1 4 2 5 7 ]
-    print(b);   // [ 1 4 2 8 5 7 ]
+    printIt(a);   // [ 1 4 2 5 7 ]
+    printIt(b);   // [ 1 4 2 8 5 7 ]
 
     b = {};
     a = {};
