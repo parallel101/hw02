@@ -17,5 +17,9 @@ file(GLOB HEADER
 
 add_executable(main ${SRC} ${HEADER})
 
+add_custom_command(TARGET main POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:main> ${CMAKE_SOURCE_DIR}/build/bin/main.exe
+)
+
 source_group("Source Files"            FILES ${SRC})
 source_group("Header Files"            FILES ${HEADER})
