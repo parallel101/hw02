@@ -10,11 +10,13 @@ struct Node {
 
     int value;
 
-    Node(int value) : value(value) {}  // 有什么可以改进的？
+    // 这个构造函数有什么可以改进的？
+    Node(int val) {
+        value = val;
+    }
 
-    void insert(int value) {
-        auto node = std::make_shared<Node>(value);
-        node->value = value;
+    void insert(int val) {
+        auto node = std::make_shared<Node>(val);
         node->next = next;
         node->prev = prev;
         if (prev)
