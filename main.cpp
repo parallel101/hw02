@@ -27,6 +27,14 @@ struct Node {
         }
     }
 
+     void erase() {
+        if (next)
+            next->prev = prev;
+
+        if (prev) {
+            prev->next = std::move(next);
+        }
+    }
 
     ~Node() {
         printf("~Node()\n");   // 应输出多少次？为什么少了？
@@ -36,7 +44,7 @@ struct Node {
 template <typename T>
 struct List {
     std::unique_ptr<Node<T>> head;
-    size_t count = 0;
+    Node<T>* tail = nullptr;
 
     List() = default;
 
@@ -44,9 +52,11 @@ struct List {
         printf("List 被拷贝！\n");
         // head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
-        auto num = other.count;
-        while(num--) {
-            push_front(other.at(num)->value);
+        auto curr = other.tail;
+        while(curr) {
+            printf("%d\n", curr->value);
+            push_front(curr->value);
+            curr = curr->prev;
         }
     }
 
@@ -62,7 +72,6 @@ struct List {
     T pop_front() {
         T ret = head->value;
         head = std::move(head->next);
-        count--;
         return ret;
     }
 
@@ -72,7 +81,9 @@ struct List {
             head->prev = node.get();
         node->next = std::move(head);
         head = std::move(node);
-        count++;
+        if (!tail) {
+            tail = head.get();
+        }
     }
 
     Node<T> *at(size_t index) const {
@@ -81,17 +92,6 @@ struct List {
             curr = curr->next.get();
         }
         return curr;
-    }
-
-    void erase(size_t index) {
-        count--;
-        auto tmp = at(index);
-        if (tmp->next)
-            tmp->next->prev = tmp->prev;
-
-        if (tmp->prev) {
-            tmp->prev->next = std::move(tmp->next);
-        }
     }
 };
 
@@ -117,13 +117,13 @@ int main() {
 
     print(a);   // [ 1 4 9 2 8 5 7 ]
 
-    a.erase(2);
+    a.at(2)->erase();
 
     print(a);   // [ 1 4 2 8 5 7 ]
 
     List<int> b = a;
 
-    a.erase(3);
+    a.at(3)->erase();
 
     print(a);   // [ 1 4 2 5 7 ]
     print(b);   // [ 1 4 2 8 5 7 ]
