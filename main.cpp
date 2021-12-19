@@ -2,17 +2,18 @@
 #include <cstdio>
 #include <memory>
 
+template <typename T>
 struct Node {
     // 这两个指针会造成什么问题？请修复
     std::unique_ptr<Node> next;
     Node* prev;
     // 如果能改成 unique_ptr 就更好了!
 
-    int value;
+    T value;
 
-    explicit Node(int value) : value(value), prev(nullptr) {}  // 有什么可以改进的？
+    explicit Node(T value) : value(value), prev(nullptr) {}  // 有什么可以改进的？
 
-    void insert(int value) {
+    void insert(T value) {
         auto node = std::make_unique<Node>(value);
         node->value = value;
         node->next = std::move(next);
@@ -37,8 +38,11 @@ struct Node {
     }
 };
 
+template <typename T>
 struct List {
-    std::unique_ptr<Node> head;
+    typedef Node<T> NodeT;
+
+    std::unique_ptr<NodeT> head;
 
     List() = default;
 
@@ -64,25 +68,25 @@ struct List {
     List(List &&) = default;
     List &operator=(List &&) = default;
 
-    Node *front() const {
+    NodeT *front() const {
         return head.get();
     }
 
-    int pop_front() {
-        int ret = head->value;
+    T pop_front() {
+        T ret = head->value;
         head = std::move(head->next);
         return ret;
     }
 
-    void push_front(int value) {
-        auto node = std::make_unique<Node>(value);
+    void push_front(T value) {
+        auto node = std::make_unique<NodeT>(value);
         if (head)
             head->prev = node.get();
         node->next = std::move(head);
         head = std::move(node);
     }
 
-    Node *at(size_t index) const {
+    NodeT *at(size_t index) const {
         auto curr = front();
         for (size_t i = 0; i < index; i++) {
             curr = curr->next.get();
@@ -91,7 +95,8 @@ struct List {
     }
 };
 
-void print(const List& lst) {  // 有什么值得改进的？
+template <typename T>
+void print(const List<T>& lst) {  // 有什么值得改进的？
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
@@ -100,7 +105,7 @@ void print(const List& lst) {  // 有什么值得改进的？
 }
 
 int main() {
-    List a;
+    List<int> a;
 
     a.push_front(7);
     a.push_front(5);
