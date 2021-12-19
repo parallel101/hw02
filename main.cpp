@@ -54,7 +54,6 @@ struct List {
         // 请实现拷贝构造函数为 **深拷贝**
         auto curr = other.tail;
         while(curr) {
-            printf("%d\n", curr->value);
             push_front(curr->value);
             curr = curr->prev;
         }
