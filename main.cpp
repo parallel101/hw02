@@ -2,32 +2,35 @@
 #include <cstdio>
 #include <memory>
 
+template <typename T>
 struct Node {
     // 这两个指针会造成什么问题？请修复
-    std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
+    std::unique_ptr<Node> next;
+    Node* prev;
     // 如果能改成 unique_ptr 就更好了!
 
-    int value;
+    T value;
 
-    Node(int value) : value(value) {}  // 有什么可以改进的？
+    explicit Node(T value) : value(value), prev(nullptr) {}  // 有什么可以改进的？
 
-    void insert(int value) {
-        auto node = std::make_shared<Node>(value);
+    void insert(T value) {
+        auto node = std::make_unique<Node>(value);
         node->value = value;
-        node->next = next;
+        node->next = std::move(next);
         node->prev = prev;
-        if (prev)
-            prev->next = node;
         if (next)
-            next->prev = node;
+            next->prev = node.get();
+        if (prev)
+            prev->next = std::move(node);
     }
 
     void erase() {
-        if (prev)
-            prev->next = next;
+        // prev->next manages the lifecycle of current Node;
+        // so it is important to set next->prev before setting prev->next.
         if (next)
             next->prev = prev;
+        if (prev)
+            prev->next = std::move(next);
     }
 
     ~Node() {
@@ -35,15 +38,49 @@ struct Node {
     }
 };
 
+template <typename T> struct List;
+
+template <typename T>
+struct ListIterator {
+    const List<T>* plist;
+    size_t index;
+
+    ListIterator(const List<T> *plist, size_t index = 0): plist(plist), index(index) {}
+
+    ListIterator& operator+=(int addon) { index+=addon; return *this;}
+
+    Node<T> *operator->() { return plist->at(index); }
+
+    bool operator!=(const ListIterator& rhs) { 
+        return plist != rhs.plist || index != rhs.index;
+    }
+};
+
+template <typename T>
 struct List {
-    std::shared_ptr<Node> head;
+    typedef Node<T> NodeType;
+    typedef ListIterator<T> iterator;
+
+    std::unique_ptr<NodeType> head;
+    size_t size;
 
     List() = default;
 
     List(List const &other) {
         printf("List 被拷贝！\n");
-        head = other.head;  // 这是浅拷贝！
+        // head = other.head; // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
+
+        auto curr=other.front();
+        // tail insertion step 1. go to the tail
+        while (curr->next) {
+            curr = curr->next.get();
+        }
+        // tail insertion step 2. traverse from tail to head
+        while (curr) {
+            push_front(curr->value);
+            curr = curr->prev;
+        }
     }
 
     List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
@@ -51,34 +88,49 @@ struct List {
     List(List &&) = default;
     List &operator=(List &&) = default;
 
-    Node *front() const {
+    NodeType *front() const {
         return head.get();
     }
 
-    int pop_front() {
-        int ret = head->value;
-        head = head->next;
+    T pop_front() {
+        T ret = head->value;
+        head = std::move(head->next);
         return ret;
     }
 
-    void push_front(int value) {
-        auto node = std::make_shared<Node>(value);
-        node->next = head;
+    void push_front(T value) {
+        auto node = std::make_unique<NodeType>(value);
         if (head)
-            head->prev = node;
-        head = node;
+            head->prev = node.get();
+        node->next = std::move(head);
+        head = std::move(node);
     }
 
-    Node *at(size_t index) const {
+    NodeType *at(size_t index) const {
         auto curr = front();
         for (size_t i = 0; i < index; i++) {
             curr = curr->next.get();
         }
         return curr;
     }
+
+    iterator begin() const {
+        return iterator(this);
+    }
+
+    iterator end() const {
+        size_t n = 0;
+        auto curr=front();
+        while (curr) {
+            n ++;
+            curr = curr->next.get();
+        }
+        return iterator(this, n);
+    }
 };
 
-void print(List lst) {  // 有什么值得改进的？
+template <typename T>
+void print(const List<T>& lst) {  // 有什么值得改进的？
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
@@ -86,8 +138,17 @@ void print(List lst) {  // 有什么值得改进的？
     printf(" ]\n");
 }
 
+template <typename T>
+void printIt(const List<T>& lst) {
+    printf("[");
+    for (auto it = lst.begin(); it!=lst.end(); it+=1) {
+        printf(" %d", it->value);
+    }
+    printf(" ]\n");
+}
+
 int main() {
-    List a;
+    List<int> a;
 
     a.push_front(7);
     a.push_front(5);
@@ -97,18 +158,18 @@ int main() {
     a.push_front(4);
     a.push_front(1);
 
-    print(a);   // [ 1 4 9 2 8 5 7 ]
+    printIt(a);   // [ 1 4 9 2 8 5 7 ]
 
     a.at(2)->erase();
 
-    print(a);   // [ 1 4 2 8 5 7 ]
+    printIt(a);   // [ 1 4 2 8 5 7 ]
 
     List b = a;
 
     a.at(3)->erase();
 
-    print(a);   // [ 1 4 2 5 7 ]
-    print(b);   // [ 1 4 2 8 5 7 ]
+    printIt(a);   // [ 1 4 2 5 7 ]
+    printIt(b);   // [ 1 4 2 8 5 7 ]
 
     b = {};
     a = {};
