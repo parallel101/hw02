@@ -10,7 +10,7 @@ struct Node {
 
     int value;
 
-    Node(int value) : value(value), prev(nullptr) {}  // 有什么可以改进的？-> 声明为explicit 避免implicit casting，初始化prev指针（POD）
+    explicit Node(int value) : value(value), prev(nullptr) {}  // 有什么可以改进的？-> 声明为explicit 避免implicit casting，初始化prev指针（POD）
 
     void insert(int value) {
         auto node = std::make_unique<Node>(value);
@@ -95,7 +95,7 @@ struct List {
     }
 };
 
-void print(List lst) {  // 有什么值得改进的？-> 传递引用常量，避免拷贝
+void print(const List& lst) {  // 有什么值得改进的？-> 传递引用常量，避免拷贝
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
