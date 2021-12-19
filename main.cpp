@@ -1,19 +1,19 @@
-/* »ùÓÚÖÇÄÜÖ¸ÕëÊµÏÖË«ÏòÁ´±í */
+/* åŸºäºæ™ºèƒ½æŒ‡é’ˆå®ç°åŒå‘é“¾è¡¨ */
 #include <cstdio>
 #include <memory>
 
 struct Node {
-	// ÕâÁ½¸öÖ¸Õë»áÔì³ÉÊ²Ã´ÎÊÌâ£¿ÇëĞŞ¸´
+	// è¿™ä¸¤ä¸ªæŒ‡é’ˆä¼šé€ æˆä»€ä¹ˆé—®é¢˜ï¼Ÿè¯·ä¿®å¤
 	std::unique_ptr<Node> next;
 	Node* prev;
     
-	// Èç¹ûÄÜ¸Ä³É unique_ptr ¾Í¸üºÃÁË!
+	// å¦‚æœèƒ½æ”¹æˆ unique_ptr å°±æ›´å¥½äº†!
 
     int value;
 
     Node(int value) : next(nullptr),prev(NULL),value(value) {
 		
-	}  // ÓĞÊ²Ã´¿ÉÒÔ¸Ä½øµÄ£¿
+	}  // æœ‰ä»€ä¹ˆå¯ä»¥æ”¹è¿›çš„ï¼Ÿ
 
     void insert(int value) {
         auto node = std::unique_ptr<Node>(new Node(value));
@@ -41,7 +41,7 @@ struct Node {
     }
 
     ~Node() {
-        printf("~Node()\n");    // Ó¦Êä³ö¶àÉÙ´Î£¿ÎªÊ²Ã´ÉÙÁË£¿
+        printf("~Node()\n");    // åº”è¾“å‡ºå¤šå°‘æ¬¡ï¼Ÿä¸ºä»€ä¹ˆå°‘äº†ï¼Ÿ
     }
 };
 
@@ -51,7 +51,7 @@ struct List {
     List() = default;
 
     List(List const &other) {
-        printf("List  ±»¿½±´\n");
+        printf("List  è¢«æ‹·è´\n");
 		head.reset();
 		if (!other.front())return;
 		Node* pOtherNodeFront = other.front();
@@ -63,10 +63,10 @@ struct List {
 			pthisNodeFront = pthisNodeFront->next.get();
 			pOtherNodeFront = pOtherNodeFront->next.get();
 		}
-		// ÇëÊµÏÖ¿½±´¹¹Ôìº¯ÊıÎª **Éî¿½±´**
+		// è¯·å®ç°æ‹·è´æ„é€ å‡½æ•°ä¸º **æ·±æ‹·è´**
     }
 
-    List &operator=(List const &) = delete;  // ÎªÊ²Ã´É¾³ı¿½±´¸³Öµº¯ÊıÒ²²»³ö´í£¿
+    List &operator=(List const &) = delete;  // ä¸ºä»€ä¹ˆåˆ é™¤æ‹·è´èµ‹å€¼å‡½æ•°ä¹Ÿä¸å‡ºé”™ï¼Ÿ
 
     List(List &&) = default;
     List &operator=(List &&) = default;
@@ -106,7 +106,7 @@ struct List {
     }
 };
 
-void print(List lst) {  
+void print(List const &lst) {  
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
