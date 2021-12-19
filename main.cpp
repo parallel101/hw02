@@ -10,7 +10,7 @@ struct Node {
 
     int value;
 
-    Node(int value) : value(value) {}  // 有什么可以改进的？-> 声明为explicit 避免implicit casting
+    Node(int value) : value(value), prev(nullptr) {}  // 有什么可以改进的？-> 声明为explicit 避免implicit casting，初始化prev指针（POD）
 
     void insert(int value) {
         auto node = std::make_unique<Node>(value);
@@ -21,14 +21,15 @@ struct Node {
             next->prev = node.get();
         if (prev)
             prev->next = std::move(node);
-        // 当前节点 释放？
     }
 
     void erase() {
-        if (prev)
-            prev->next = std::move(next);
+        // prev->next manages the lifecycle of current Node;
+        // so it is important to set next->prev before setting prev->next.
         if (next)
             next->prev = prev;
+        if (prev)
+            prev->next = std::move(next);
     }
 
     ~Node() {
@@ -43,8 +44,19 @@ struct List {
 
     List(List const &other) {
         printf("List 被拷贝！\n");
-        // head = other.head;  // 这是浅拷贝！
+        // head = other.head;  这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
+
+        auto curr=other.front();
+        // tail insertion step 1. go to the tail
+        while (curr->next.get()) {
+            curr = curr->next.get();
+        }
+        // tail insertion step 2. traverse from tail to head
+        while (curr) {
+            push_front(curr->value);
+            curr = curr->prev;
+        }
     }
 
     List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？ 
@@ -59,7 +71,7 @@ struct List {
     }
 
     int pop_front() {
-        // TODO:边界检查
+        // TODO: 边界检查
         int ret = head->value;
         head = std::move(head->next);
         return ret;
@@ -67,7 +79,7 @@ struct List {
 
     void push_front(int value) {
         auto node = std::make_unique<Node>(value);
-        if (head)
+        if (head.get())
             head->prev = node.get();
         node->next = std::move(head);
         head = std::move(node);
