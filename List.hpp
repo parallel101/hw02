@@ -1,4 +1,3 @@
-
 #pragma once
 #include <memory>
 #include <utility>
@@ -7,6 +6,7 @@ template <typename T>
 struct Node {
 	using NodeUPtr = std::unique_ptr<Node<T>>;
 	using NodePtr = Node<T>*;
+
 	// 这两个指针会造成什么问题？请修复
 	NodeUPtr next = nullptr;
 	NodePtr prev = nullptr;
@@ -20,56 +20,58 @@ struct Node {
 	Node(TArg&& arg, NodePtr p = nullptr, NodeUPtr n = nullptr) : value(T(std::forward<TArg>(arg))), prev(p), next(std::move(n)) {}    // 有什么可以改进的？
 
 	template<typename TArg>
-	void insertAsPrev(TArg&& firstArg) {
+	void insertAsPrev(TArg&& firstArg) {  //递归基
 		auto node = std::make_unique<Node<T>>(std::forward<TArg>(firstArg), prev, std::move(prev->next));
-		prev->next = std::move(node);
+		prev->next = std::move(node);  //设置正向链接
 		prev = (prev->next).get();    //设置逆向链接
 	}
 
 	template<typename FirstTArg, typename ...RestTArgs>
-	void insertAsPrev(FirstTArg&& firstArg, RestTArgs&& ...args) {
+	void insertAsPrev(FirstTArg&& firstArg, RestTArgs&& ...args) {  //variadic template，多个值在前面插入
 		insertAsPrev(std::forward<FirstTArg>(firstArg));
 		insertAsPrev(std::forward<RestTArgs>(args)...);
 	}
 
 	template<typename TArg>
-	void insertAsPrevInverted(TArg&& firstArg) {
+	void insertAsPrevInverted(TArg&& firstArg) {  //递归基
 		auto node = std::make_unique<Node<T>>(std::forward<TArg>(firstArg), prev, std::move(prev->next));
-		prev->next = std::move(node);
-		prev = (prev->next).get();    //设置逆向链接
+		prev->next = std::move(node);    //设置正向链接
+		prev = (prev->next).get();       //设置逆向链接
 	}
 
 	template<typename FirstTArg, typename ...RestTArgs>
-	void insertAsPrevInverted(FirstTArg&& firstArg, RestTArgs&& ...args) {
+	void insertAsPrevInverted(FirstTArg&& firstArg, RestTArgs&& ...args) {  //多个值逆序在前面插入
 		insertAsPrev(std::forward<FirstTArg>(firstArg));
 		insertAsPrev(std::forward<RestTArgs>(args)...);
 	}
 
 	template<typename TArg>
-	void insertAsNext(TArg&& firstArg) {
+	void insertAsNext(TArg&& firstArg) {  //递归基
 		auto node = std::make_unique<Node<T>>(std::forward<TArg>(firstArg), this, std::move(next));
 		node->next->prev = node.get();  //设置逆向链接
-		next = std::move(node);
+		next = std::move(node);  //设置正向链接
 	}
 
-	template<typename FirstTArg, typename ...RestTArgs>
+	template<typename FirstTArg, typename ...RestTArgs>   //多个值顺序在后面插入
 	void insertAsNext(FirstTArg&& firstArg, RestTArgs&& ...args) {
 		insertAsNext(std::forward<FirstTArg>(firstArg));
 		insertAsNext(std::forward<RestTArgs>(args)...);
 	}
 
 	template<typename TArg>
-	void insertAsNextInverted(TArg&& firstArg) {
+	void insertAsNextInverted(TArg&& firstArg) {  //递归基
 		auto node = std::make_unique<Node<T>>(std::forward<TArg>(firstArg), this, std::move(next));
 		node->next->prev = node.get();  //设置逆向链接
-		next = std::move(node);
+		next = std::move(node);  //设置正向链接
 	}
 
 	template<typename FirstTArg, typename ...RestTArgs>
-	void insertAsNextInverted(FirstTArg&& firstArg, RestTArgs&& ...args) {
+	void insertAsNextInverted(FirstTArg&& firstArg, RestTArgs&& ...args) {  //逆序在后面插入
 		insertAsNextInverted(std::forward<RestTArgs>(args)...);
 		insertAsNextInverted(std::forward<FirstTArg>(firstArg));
 	}
+
+	//c++的函数模板不支持偏特化，只支持重载，这些相似的代码有没有简化的写法？workround: 偏特化functor类模板? tag dispatch?
 
 	void erase() {
 		next->prev = prev;
@@ -86,12 +88,12 @@ template <typename T>
 struct List {
 	using NodeUPtr = std::unique_ptr<Node<T>>;
 	using NodePtr = Node<T>*;
+
 	//设置头尾哨兵，保证前向后向指针始终有效
 	NodeUPtr head = nullptr; //头哨兵
 	NodePtr tail = nullptr;  //尾哨兵
 
-
-	class ListIterator
+	class ListIterator  //a minimal iterator 
 	{
 	public:
 		ListIterator(NodePtr curr) : current(curr) { }
@@ -114,28 +116,24 @@ struct List {
 	};
 
 	constexpr NodePtr first() const {//首节点
-
 		return head->next.get();
 	}
 
 	constexpr NodePtr last() const { //末节点
-
 		return tail->prev;
 	}
 
-	auto begin() const {
-
+	auto begin() const {  //支持 Range-based for循环
 		return ListIterator{ first() };
 	}
 
-	auto end() const {
-
+	auto end() const { //支持 Range-based for循环
 		return ListIterator{ tail };
 	}
 
 	void init() {
 		head = std::make_unique<Node<T>>();  //创建头哨兵节点
-		tail = (head->next = std::make_unique<Node<T>>()).get();  //创建尾哨兵节点
+		tail = (head->next = std::make_unique<Node<T>>()).get();  //创建尾哨兵节点，设置正向链接
 		head->next->prev = head.get();  //设置逆向链接
 	}
 
@@ -158,7 +156,7 @@ struct List {
 	List(List&&) = default;
 	List& operator=(List&&) = default;
 
-	T pop_front() {
+	T& pop_front() {
 		auto ret = first()->value;
 		first()->erase();
 		return ret;

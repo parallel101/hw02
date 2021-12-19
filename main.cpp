@@ -1,7 +1,6 @@
 /* 基于智能指针实现双向链表 */
 #include <cstdio>
 #include "List.hpp"
-#include <iterator>
 
 void print(const List<int>& lst) {  // 有什么值得改进的？
 	printf("[");
@@ -12,7 +11,6 @@ void print(const List<int>& lst) {  // 有什么值得改进的？
 }
 
 int main() {
-
 
 	List<int> a;
 
