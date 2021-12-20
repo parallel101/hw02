@@ -47,7 +47,9 @@ struct Node {
     }
 
     ~Node() {
-        printf("~Node()\n");   // 应输出多少次？为什么少了？
+      static int count = 0;
+      printf("~Node() %d\n",
+             ++count); // 应输出多少次？为什么少了？ 输出了１３次
     }
 };
 
@@ -138,7 +140,7 @@ int main() {
 
     print(a);   // [ 1 4 2 8 5 7 ]
 
-    List b = a;　// 调用的是拷贝构造函数
+    List b = a; // 调用的是拷贝构造函数
 
     a.at(3)->erase();
 
