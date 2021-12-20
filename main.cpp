@@ -1,22 +1,27 @@
 /* 基于智能指针实现双向链表 */
 #include <cstdio>
 #include <memory>
+#include <vector>
 
+// Node 只维护指针连接关系
+template<typename T>
 struct Node {
     // 这两个指针会造成什么问题？请修复
-    std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
+    Node* next;
+    Node* prev;
     // 如果能改成 unique_ptr 就更好了!
 
-    int value;
+    T value;
 
     // 这个构造函数有什么可以改进的？
-    Node(int val) {
-        value = val;
+    Node(T val = 0) 
+        : value(val) 
+        , next(nullptr)
+        , prev(nullptr)
+    {
     }
 
-    void insert(int val) {
-        auto node = std::make_shared<Node>(val);
+    void insert(Node* node) {
         node->next = next;
         node->prev = prev;
         if (prev)
@@ -37,15 +42,23 @@ struct Node {
     }
 };
 
+template<typename T>
 struct List {
-    std::shared_ptr<Node> head;
+    using Node_t = Node<T>;
 
     List() = default;
 
     List(List const &other) {
         printf("List 被拷贝！\n");
-        head = other.head;  // 这是浅拷贝！
+        auto head = other.front();  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
+        while (head->next) {
+            head = head->next;
+        }
+        while (head) {
+            this->push_front(head->value);
+            head = head->prev;
+        }
     }
 
     List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
@@ -53,43 +66,49 @@ struct List {
     List(List &&) = default;
     List &operator=(List &&) = default;
 
-    Node *front() const {
-        return head.get();
+    Node_t*front() const {
+        return m_head;
     }
 
-    int pop_front() {
-        int ret = head->value;
-        head = head->next;
-        return ret;
+    void pop_front() {
+        if (!m_head) return; // if list is empty, pop_front should do nothing ? no value can be returned ?
+        m_head = m_head->next;
     }
 
     void push_front(int value) {
-        auto node = std::make_shared<Node>(value);
-        node->next = head;
-        if (head)
-            head->prev = node;
-        head = node;
+        auto node = std::make_unique<Node_t>(value);
+        node->next = m_head;
+        if (m_head)
+            m_head->prev = node.get();
+        m_head = node.get();
+        m_nodeList.emplace_back(std::move(node));
     }
 
-    Node *at(size_t index) const {
+    Node_t*at(size_t index) const {
         auto curr = front();
         for (size_t i = 0; i < index; i++) {
-            curr = curr->next.get();
+            if (!curr) return nullptr; // index >= list.size();
+            curr = curr->next;
         }
         return curr;
     }
+
+private:
+    // in heap, will not run out of stack space when a long list is being destructed
+    std::vector<std::unique_ptr<Node_t>> m_nodeList;
+    Node_t* m_head{}; // nullptr
 };
 
-void print(List lst) {  // 有什么值得改进的？
+void print(const List<int>& lst) {  // 有什么值得改进的？
     printf("[");
-    for (auto curr = lst.front(); curr; curr = curr->next.get()) {
+    for (auto curr = lst.front(); curr; curr = curr->next) {
         printf(" %d", curr->value);
     }
     printf(" ]\n");
 }
 
 int main() {
-    List a;
+    List<int> a;
 
     a.push_front(7);
     a.push_front(5);
@@ -105,7 +124,7 @@ int main() {
 
     print(a);   // [ 1 4 2 8 5 7 ]
 
-    List b = a;
+    List<int> b = a;
 
     a.at(3)->erase();
 
@@ -114,6 +133,11 @@ int main() {
 
     b = {};
     a = {};
+    // stack overflow? memory leak?
+    for (int i = 0; i < 1000000; ++i) {
+        a.push_front(i);
+    }
+    print(a);
 
     return 0;
 }
