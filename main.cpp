@@ -1,25 +1,28 @@
 /* 基于智能指针实现双向链表 */
 #include <cstdio>
 #include <memory>
+#include <iostream>
 
+template <typename T>
 struct Node {
     // 这两个指针会造成什么问题？请修复
     std::unique_ptr<Node> next;
     Node* prev;
     // 如果能改成 unique_ptr 就更好了!
 
-    int value;
+    T value;
 
     // 这个构造函数有什么可以改进的？
-    Node(int val)
+    Node(const T& val)
         : value(val)
+        , prev(nullptr)
     {}
 
     /*
     * 此函数在当前Node处构造一个Node，并更改指针，但我认为原Node未被删除，
     * 不是很确定此函数目的，第一次提交暂时按我猜测的方式改写
     **/
-    void insert(int val) {
+    void insert(const T& val) {
         auto node = std::make_unique<Node>(val);
         if (next)
             next->prev = node.get();
@@ -41,8 +44,9 @@ struct Node {
     }
 };
 
+template <typename T>
 struct List {
-    std::unique_ptr<Node> head;
+    std::unique_ptr<Node<T>> head;
 
     List() = default;
 
@@ -56,13 +60,13 @@ struct List {
         }
         else
         {
-            head = std::make_unique<Node>(other.head->value);
-            Node* ptrNew = head.get();
-            Node* ptrPre = other.head.get();
+            head = std::make_unique<Node<T>>(other.head->value);
+            Node<T>* ptrNew = head.get();
+            Node<T>* ptrPre = other.head.get();
 
             while(ptrPre->next)
             {
-                ptrNew->next = std::make_unique<Node>(ptrPre->next->value);
+                ptrNew->next = std::make_unique<Node<T>>(ptrPre->next->value);
                 ptrNew->next->prev = ptrNew;
 
                 ptrNew = ptrNew->next.get();
@@ -76,7 +80,7 @@ struct List {
     List(List &&) = default;
     List &operator=(List &&) = default;
 
-    Node *front() const {
+    Node<T> *front() const {
         return head.get();
     }
 
@@ -87,14 +91,14 @@ struct List {
     }
 
     void push_front(int value) {
-        auto node = std::make_unique<Node>(value);
+        auto node = std::make_unique<Node<T>>(value);
         if (head)
             head->prev = node.get();
         node->next = std::move(head);
         head = std::move(node);
     }
 
-    Node *at(size_t index) const {
+    Node<T> *at(size_t index) const {
         auto curr = front();
         for (size_t i = 0; i < index; i++) {
             curr = curr->next.get();
@@ -103,16 +107,17 @@ struct List {
     }
 };
 
-void print(const List& lst) {  // 有什么值得改进的？
+template<typename T>
+void print(const List<T>& lst) {  // 有什么值得改进的？
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
-        printf(" %d", curr->value);
+        std::cout << " " << curr->value;
     }
     printf(" ]\n");
 }
 
 int main() {
-    List a;
+    List<int> a;
 
     a.push_front(7);
     a.push_front(5);
