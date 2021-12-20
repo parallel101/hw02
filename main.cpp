@@ -68,7 +68,7 @@ struct List {
 
     List(List &other) {
         printf("List 被拷贝！\n");
-        // head = other.head;  // 这是浅拷贝！
+        // head = other.head;  // 这是浅拷贝!
         // 请实现拷贝构造函数为 **深拷贝**
         
         //try to avoid building wheels
