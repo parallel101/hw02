@@ -2,4 +2,5 @@
 set -e
 cmake -B build
 cmake --build build
-build/main
+build/bin/main
+read -p "Press any key to resume ..."

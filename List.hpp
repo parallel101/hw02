@@ -71,7 +71,7 @@ struct Node {
 		insertAsNextInverted(std::forward<FirstTArg>(firstArg));
 	}
 
-	//c++的函数模板不支持偏特化，只支持重载，这些相似的代码有没有简化的写法？workround: 偏特化functor类模板? tag dispatch?
+	//c++的函数模板不支持偏特化，只支持重载，这些相似的代码有没有简化的写法？workaround: 偏特化functor类模板? tag dispatch?
 
 	void erase() {
 		next->prev = prev;
