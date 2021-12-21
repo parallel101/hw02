@@ -5,7 +5,7 @@
 
 struct Node {
     // 这两个指针会造成什么问题？请修复
-    std::unique_ptr<Node> next;
+    std::unique_ptr<Node> next = nullptr;
     Node* prev = nullptr;
     // 如果能改成 unique_ptr 就更好了!
 
@@ -17,16 +17,16 @@ struct Node {
 
     void insert(int val) {
         auto newNode = std::make_unique<Node>(val);
-        auto oldNode = std::make_unique<Node>(value);
+		auto oldNode = std::make_unique<Node>(value);
 
-        newNode->prev = prev;
-        if (next)
-            next->prev = oldNode.get();
+		newNode->prev = prev;
+		if (next)
+			next->prev = oldNode.get();
 
-        oldNode->next = std::move(next);
-        newNode->next = std::move(oldNode);
+		oldNode->next = std::move(next);
+		newNode->next = std::move(oldNode);
 		if (prev)
-            prev->next = std::move(newNode);
+			prev->next = std::move(newNode);
 
     }
 
@@ -47,7 +47,7 @@ struct Node {
 };
 
 struct List {
-    std::unique_ptr<Node> head;
+    std::unique_ptr<Node> head = nullptr;
 
     List() = default;
 
