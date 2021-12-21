@@ -17,16 +17,22 @@ struct Node {
 
     void insert(int val) {
         auto newNode = std::make_unique<Node>(val);
-		auto oldNode = std::make_unique<Node>(value);
+        newNode->prev = prev;
+        if(prev)
+            prev->prev = newNode.get();
 
-		newNode->prev = prev;
-		if (next)
-			next->prev = oldNode.get();
+        newNode->next = std::move(prev->next);
+        prev->next = std::move(newNode);
+            
+		//auto oldNode = std::make_unique<Node>(value);
+		//newNode->prev = prev;
+		//if (next)
+		//	next->prev = oldNode.get();
 
-		oldNode->next = std::move(next);
-		newNode->next = std::move(oldNode);
-		if (prev)
-			prev->next = std::move(newNode);
+		//oldNode->next = std::move(next);
+		//newNode->next = std::move(oldNode);
+		//if (prev)
+		//	prev->next = std::move(newNode);
 
     }
 
