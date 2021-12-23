@@ -20,55 +20,41 @@ struct Node {
 	Node(TArg&& arg, NodePtr p = nullptr, NodeUPtr n = nullptr) : value(T(std::forward<TArg>(arg))), prev(p), next(std::move(n)) {}    // 有什么可以改进的？
 
 	template<typename TArg>
-	void insertAsPrev(TArg&& firstArg) {  //递归基
-		auto node = std::make_unique<Node<T>>(std::forward<TArg>(firstArg), prev, std::move(prev->next));
+	void insertAsPrev(TArg&& arg) {
+		auto node = std::make_unique<Node<T>>(std::forward<TArg>(arg), prev, std::move(prev->next));
 		prev->next = std::move(node);  //设置正向链接
 		prev = (prev->next).get();    //设置逆向链接
 	}
 
-	template<typename FirstTArg, typename ...RestTArgs>
-	void insertAsPrev(FirstTArg&& firstArg, RestTArgs&& ...args) {  //variadic template，多个值在前面插入
-		insertAsPrev(std::forward<FirstTArg>(firstArg));
-		insertAsPrev(std::forward<RestTArgs>(args)...);
+	template<typename ...TArgs>
+	void insertAsPrev(TArgs&& ...args) {  //variadic template，多个值在前面插入
+		struct Dummy {} dummy;
+		((insertAsPrev(std::forward<TArgs>(args)), dummy) = ...);
+	}
+
+	template<typename ...TArgs>
+	void insertAsPrevInverted(TArgs&& ...args) {  //多个值逆序在前面插入
+		static_assert(sizeof...(args) > 0);
+		(insertAsPrev(std::forward<TArgs>(args)), ...);
 	}
 
 	template<typename TArg>
-	void insertAsPrevInverted(TArg&& firstArg) {  //递归基
-		auto node = std::make_unique<Node<T>>(std::forward<TArg>(firstArg), prev, std::move(prev->next));
-		prev->next = std::move(node);    //设置正向链接
-		prev = (prev->next).get();       //设置逆向链接
-	}
-
-	template<typename FirstTArg, typename ...RestTArgs>
-	void insertAsPrevInverted(FirstTArg&& firstArg, RestTArgs&& ...args) {  //多个值逆序在前面插入
-		insertAsPrev(std::forward<FirstTArg>(firstArg));
-		insertAsPrev(std::forward<RestTArgs>(args)...);
-	}
-
-	template<typename TArg>
-	void insertAsNext(TArg&& firstArg) {  //递归基
-		auto node = std::make_unique<Node<T>>(std::forward<TArg>(firstArg), this, std::move(next));
+	void insertAsNext(TArg&& arg) {
+		auto node = std::make_unique<Node<T>>(std::forward<TArg>(arg), this, std::move(next));
 		node->next->prev = node.get();  //设置逆向链接
 		next = std::move(node);  //设置正向链接
 	}
 
-	template<typename FirstTArg, typename ...RestTArgs>   //多个值顺序在后面插入
-	void insertAsNext(FirstTArg&& firstArg, RestTArgs&& ...args) {
-		insertAsNext(std::forward<FirstTArg>(firstArg));
-		insertAsNext(std::forward<RestTArgs>(args)...);
+	template<typename ...TArgs>
+	void insertAsNext(TArgs&& ...args) { //多个值顺序在后面插入
+		(insertAsNext(std::forward<TArgs>(args)), ...);
 	}
 
-	template<typename TArg>
-	void insertAsNextInverted(TArg&& firstArg) {  //递归基
-		auto node = std::make_unique<Node<T>>(std::forward<TArg>(firstArg), this, std::move(next));
-		node->next->prev = node.get();  //设置逆向链接
-		next = std::move(node);  //设置正向链接
-	}
-
-	template<typename FirstTArg, typename ...RestTArgs>
-	void insertAsNextInverted(FirstTArg&& firstArg, RestTArgs&& ...args) {  //逆序在后面插入
-		insertAsNextInverted(std::forward<RestTArgs>(args)...);
-		insertAsNextInverted(std::forward<FirstTArg>(firstArg));
+	template<typename ...TArgs>
+	void insertAsNextInverted(TArgs&& ...args) { //多个值顺序在后面插入
+		static_assert(sizeof...(args) > 0);
+		struct Dummy {} dummy;
+		((insertAsNext(std::forward<TArgs>(args)), dummy) = ...);
 	}
 
 	//c++的函数模板不支持偏特化，只支持重载，这些相似的代码有没有简化的写法？workaround: 偏特化functor类模板? tag dispatch?

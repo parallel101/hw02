@@ -15,6 +15,7 @@ int main() {
 	List<int> a;
 
 	a.push_front(1, 4, 9, 2, 8, 5, 7);
+
 	/*a.push_front(7);
 	a.push_front(5);
 	a.push_front(8);
