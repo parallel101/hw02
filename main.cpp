@@ -5,7 +5,7 @@
 struct Node {
     // 这两个指针会造成什么问题？请修复
     std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
+    std::weak_ptr<Node> prev;
     // 如果能改成 unique_ptr 就更好了!
 
     int value;
@@ -15,21 +15,33 @@ struct Node {
         value = val;
     }
 
+    Node(Node const& other) {
+        value = other.value;
+    }
+
+    Node &operator=(Node const& other) {
+        this->~Node();
+        new (this) Node(other);
+        return *this;
+    }
+
     void insert(int val) {
         auto node = std::make_shared<Node>(val);
         node->next = next;
-        node->prev = prev;
-        if (prev)
-            prev->next = node;
+        std::shared_ptr<Node> temp = prev.lock();
+        node->prev = temp;
+        if (temp)
+            temp->next = node;
         if (next)
             next->prev = node;
     }
 
     void erase() {
-        if (prev)
-            prev->next = next;
+        std::shared_ptr<Node> temp = prev.lock();
+        if (temp)
+            temp->next = next;
         if (next)
-            next->prev = prev;
+            next->prev = temp;
     }
 
     ~Node() {
@@ -43,9 +55,19 @@ struct List {
     List() = default;
 
     List(List const &other) {
-        printf("List 被拷贝！\n");
-        head = other.head;  // 这是浅拷贝！
+        printf("List is copied!\n");
+        //head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
+        auto node = std::make_shared<Node>(*(other.head));
+        head = node;
+        std::shared_ptr<Node> temp = other.head;
+        while (temp->next) {
+            auto nodeNew = std::make_shared<Node>(*(temp->next));
+            node->next = nodeNew;
+            nodeNew->prev = node;
+            node = node->next;
+            temp = temp->next;
+        }
     }
 
     List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
@@ -80,7 +102,7 @@ struct List {
     }
 };
 
-void print(List lst) {  // 有什么值得改进的？
+void print(const List &lst) {  // 有什么值得改进的？
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
@@ -110,6 +132,8 @@ int main() {
     a.at(3)->erase();
 
     print(a);   // [ 1 4 2 5 7 ]
+    a.at(3)->insert(10);
+    print(a);   // [ 1 4 2 10 7 ]
     print(b);   // [ 1 4 2 8 5 7 ]
 
     b = {};
