@@ -24,26 +24,26 @@ struct Node {
         newNode->next = std::move(prev->next);
         prev->next = std::move(newNode);
             
-		//auto oldNode = std::make_unique<Node>(value);
-		//newNode->prev = prev;
-		//if (next)
-		//	next->prev = oldNode.get();
+        //auto oldNode = std::make_unique<Node>(value);
+        //newNode->prev = prev;
+        //if (next)
+        //  next->prev = oldNode.get();
 
-		//oldNode->next = std::move(next);
-		//newNode->next = std::move(oldNode);
-		//if (prev)
-		//	prev->next = std::move(newNode);
+        //oldNode->next = std::move(next);
+        //newNode->next = std::move(oldNode);
+        //if (prev)
+        //  prev->next = std::move(newNode);
 
     }
 
     void erase() {
         if (next)
         {
-			next->prev = prev;
+            next->prev = prev;
         }
         if (prev)
         {
-			prev->next = std::move(next);
+            prev->next = std::move(next);
         }
     }
 
@@ -60,26 +60,26 @@ struct List {
     List(List const &other) {
         printf("List copied\n");
   //      auto newHead = std::make_unique<Node>(other.head->value);
-		//for (auto curr = other.front()->next.get(); curr; curr = curr->next.get()) {
-		//	std::cout << curr->value << std::endl;
-		//	auto newNode = std::make_unique<Node>(curr->value);
-		//	newHead->prev = newNode.get();
-		//	newNode->next = std::move(newHead);
+        //for (auto curr = other.front()->next.get(); curr; curr = curr->next.get()) {
+        //  std::cout << curr->value << std::endl;
+        //  auto newNode = std::make_unique<Node>(curr->value);
+        //  newHead->prev = newNode.get();
+        //  newNode->next = std::move(newHead);
   //          //newNode->prev = newHead.get();
   //          //newHead->next = std::move(newNode);
 
   //          //newNode = std::move(newHead);
-		//	newHead = std::move(newNode);
+        //  newHead = std::move(newNode);
 
-		//}
+        //}
 
   //      Node* headPtr = newHead.get();
   //      if (headPtr != nullptr)
   //      {
-		//	while (headPtr->next.get())
-		//	{
-		//		headPtr = headPtr->next.get();
-		//	}
+        //  while (headPtr->next.get())
+        //  {
+        //      headPtr = headPtr->next.get();
+        //  }
 
   //      }
 
@@ -89,27 +89,27 @@ struct List {
   //      std::cout << "---------------" << std::endl;
 
   //      head.reset(headPtr);
-		auto tempPtr = other.head.get();
-		if (tempPtr != nullptr)
-		{
-			while (tempPtr->next.get())
-			{
-				tempPtr = tempPtr->next.get();
+        auto tempPtr = other.head.get();
+        if (tempPtr != nullptr)
+        {
+            while (tempPtr->next.get())
+            {
+                tempPtr = tempPtr->next.get();
 
-			}
+            }
 
-			for (auto curr = tempPtr; curr != other.head.get(); curr = curr->prev)
-			{
-				int _value = curr->value;
-				push_front(_value);
-			}
+            for (auto curr = tempPtr; curr != other.head.get(); curr = curr->prev)
+            {
+                int _value = curr->value;
+                push_front(_value);
+            }
 
-			push_front(other.head->value);
-		}
-		else
-		{
-			head = nullptr;
-		}
+            push_front(other.head->value);
+        }
+        else
+        {
+            head = nullptr;
+        }
     }
 
     List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
@@ -124,9 +124,9 @@ struct List {
     int pop_front() {
         if (head != nullptr)
         {
-			int ret = head->value;
-			head = std::move(head->next);
-			return ret;
+            int ret = head->value;
+            head = std::move(head->next);
+            return ret;
 
         }
     }
@@ -181,6 +181,7 @@ int main() {
     a.at(3)->erase();
     print(a);   // [ 1 4 2 5 7 ]
     a.at(3)->insert(90);
+    a.at(5);
 
     print(a);   // [ 1 4 2 90 5 7 ]
     print(b);   // [ 1 4 2 8 5 7 ]
