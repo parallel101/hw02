@@ -62,7 +62,6 @@ struct List {
     typedef ListIterator<T> iterator;
 
     std::unique_ptr<NodeType> head;
-    size_t size;
 
     List() = default;
 
