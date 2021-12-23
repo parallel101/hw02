@@ -9,7 +9,7 @@ struct Node {
     int value;
 
     // 避免了 value = 0; value = val;
-    Node(int val) : value(val) { }
+    explicit Node(int val) : next(nullptr), prev(nullptr), value(val) { }
 
     void insert(int val) {
         auto node = std::make_unique<Node>(val);
