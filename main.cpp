@@ -18,8 +18,6 @@ struct Node {
         node->value = value;
         node->next = std::move(next);
         node->prev = prev;
-        if (next)
-            next->prev = node.get();
         if (prev)
             prev->next = std::move(node);
     }
