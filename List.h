@@ -153,8 +153,6 @@ private:
 public:
     explicit Iterator(node_pointer ptr) noexcept : ptr(ptr) { }
 
-    Iterator(ConstIterator<L> ci) : ptr(ci.ptr) { }
-
     [[nodiscard]] inline reference operator*() {
         return ptr->value;
     }
@@ -503,7 +501,7 @@ public:
             pos = insert_before(pos, *first);
             if (mark) {
                 mark = false;
-                ret = pos;
+                ret = iterator(pos.ptr);
             }
             ++pos;
             first = next;
@@ -545,14 +543,15 @@ public:
     template<class I>
         requires is_iterator_v<I>
     iterator insert_after(const_iterator pos, I first, I last) {
-        iterator ret = pos;
+        iterator ret(pos.ptr);
         bool mark = true;
         while (first != last) {
-            auto next = first + 1;
+            auto next = first;
+            ++next;
             pos = insert_after(pos, *first);
             if (mark) {
                 mark = false;
-                ret = pos;
+                ret = iterator(pos.ptr);
             }
             first = next;
         }
@@ -647,7 +646,8 @@ public:
     iterator erase(const_iterator first, const_iterator last) {
         iterator pos = iterator(first.ptr);
         while (first != last) {
-            auto next = first + 1;
+            auto next = first;
+            ++next;
             pos = erase(first);
             first = next;
         }
