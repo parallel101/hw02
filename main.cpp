@@ -3,37 +3,35 @@
 #include <memory>
 
 struct Node {
-    // 这两个指针会造成什么问题？请修复
+    // 这两个指针会造成什么问题？请修复 A：循环引用
     std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
+    std::weak_ptr<Node> prev;
     // 如果能改成 unique_ptr 就更好了!
 
     int value;
 
-    // 这个构造函数有什么可以改进的？
-    Node(int val) {
-        value = val;
-    }
+    // 这个构造函数有什么可以改进的？ A: explicit & ： 初始化提高性能
+    explicit Node(int val) : value(val), next(nullptr) {}
 
     void insert(int val) {
         auto node = std::make_shared<Node>(val);
         node->next = next;
         node->prev = prev;
-        if (prev)
-            prev->next = node;
+        if (!prev.expired())
+            prev.lock()->next = node;
         if (next)
             next->prev = node;
     }
 
     void erase() {
-        if (prev)
-            prev->next = next;
+        if (!prev.expired())
+            prev.lock()->next = next;
         if (next)
             next->prev = prev;
     }
 
     ~Node() {
-        printf("~Node()\n");   // 应输出多少次？为什么少了？
+        printf("~Node()\n");   // 应输出多少次？为什么少了？ A: 应该是7+6=13次,这里因为erase了一个。
     }
 };
 
@@ -44,11 +42,17 @@ struct List {
 
     List(List const &other) {
         printf("List 被拷贝！\n");
-        head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
+        head = std::make_shared<Node>(*(other.front()));
+        std::shared_ptr<Node> cur = head;
+        for (int i = 1; other.at(i) != nullptr; i++) {
+            cur->next = std::make_shared<Node>(other.at(i)->value);
+            cur->next->prev = cur;
+            cur = cur->next;
+        }
     }
 
-    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
+    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？ A:默认生成的是浅拷贝，为了避免二次释放，可以将其删除禁止拷贝赋值
 
     List(List &&) = default;
     List &operator=(List &&) = default;
@@ -80,7 +84,7 @@ struct List {
     }
 };
 
-void print(List lst) {  // 有什么值得改进的？
+void print(const List &lst) {  // 有什么值得改进的？ A：添加引用避免拷贝
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
