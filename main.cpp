@@ -42,18 +42,20 @@ template <typename T> struct List;
 
 template <typename T>
 struct ListIterator {
-    const List<T>* plist;
-    size_t index;
+    Node<T>* node;
 
-    ListIterator(const List<T> *plist, size_t index = 0): plist(plist), index(index) {}
+    ListIterator(Node<T>* node): node(node) {}
 
-    ListIterator& operator+=(int addon) { index+=addon; return *this;}
-
-    Node<T> *operator->() { return plist->at(index); }
-
-    bool operator!=(const ListIterator& rhs) { 
-        return plist != rhs.plist || index != rhs.index;
+    ListIterator& operator+=(int addon) {
+        for (int i=0;i<addon&&node!=nullptr;i++) {
+            node = node->next.get();
+        }
+        return *this;
     }
+
+    Node<T> *operator->() { return node; }
+
+    bool operator!=(const ListIterator<T>& rhs) { return node != rhs.node; }
 };
 
 template <typename T>
@@ -114,17 +116,11 @@ struct List {
     }
 
     iterator begin() const {
-        return iterator(this);
+        return iterator(head.get());
     }
 
     iterator end() const {
-        size_t n = 0;
-        auto curr=front();
-        while (curr) {
-            n ++;
-            curr = curr->next.get();
-        }
-        return iterator(this, n);
+        return iterator(nullptr);
     }
 };
 
