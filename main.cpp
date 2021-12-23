@@ -3,49 +3,57 @@
 #include <memory>
 
 struct Node {
-    // 这两个指针会造成什么问题？请修复
-    std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
-    // 如果能改成 unique_ptr 就更好了!
+    std::unique_ptr<Node> next;
+    Node* prev;
 
     int value;
 
-    // 这个构造函数有什么可以改进的？
-    Node(int val) {
-        value = val;
-    }
+    // 避免了 value = 0; value = val;
+    explicit Node(int val) : next(nullptr), prev(nullptr), value(val) { }
 
     void insert(int val) {
-        auto node = std::make_shared<Node>(val);
-        node->next = next;
+        auto node = std::make_unique<Node>(val);
+        // 改下顺序，unique_ptr被移动之前访问
+        if (next) 
+            next->prev = node.get();
         node->prev = prev;
-        if (prev)
-            prev->next = node;
-        if (next)
-            next->prev = node;
+        node->next = std::move(next);
+        if (prev) 
+            prev->next = std::move(node);
     }
 
     void erase() {
-        if (prev)
-            prev->next = next;
+        // 同样在 next 移动之前修改 next->prev;
         if (next)
             next->prev = prev;
+        if (prev)
+            prev->next = std::move(next);
+        
     }
 
     ~Node() {
-        printf("~Node()\n");   // 应输出多少次？为什么少了？
+        printf("%d ~Node()\n", value);  // 打印value便于调试，应输出 7+6=13 次
     }
 };
 
 struct List {
-    std::shared_ptr<Node> head;
+    std::unique_ptr<Node> head;
 
     List() = default;
 
-    List(List const &other) {
-        printf("List 被拷贝！\n");
-        head = other.head;  // 这是浅拷贝！
-        // 请实现拷贝构造函数为 **深拷贝**
+    List(List const &other) : head(nullptr) {
+        printf("List 被拷贝!\n");
+        if(other.head) 
+        {
+            head = std::make_unique<Node>(other.head->value);
+            auto curr = head.get();
+            for(auto ptr = other.head->next.get(); ptr; ptr = ptr->next.get())
+            {
+                curr->next = std::make_unique<Node>(ptr->value);
+                curr->next->prev = curr;
+                curr = curr->next.get();
+            }
+        }
     }
 
     List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
@@ -59,16 +67,16 @@ struct List {
 
     int pop_front() {
         int ret = head->value;
-        head = head->next;
+        head = std::move(head->next);
         return ret;
     }
 
     void push_front(int value) {
-        auto node = std::make_shared<Node>(value);
-        node->next = head;
+        auto node = std::make_unique<Node>(value);
         if (head)
-            head->prev = node;
-        head = node;
+            head->prev = node.get();
+        node->next = std::move(head);
+        head = std::move(node);
     }
 
     Node *at(size_t index) const {
@@ -80,7 +88,7 @@ struct List {
     }
 };
 
-void print(List lst) {  // 有什么值得改进的？
+void print(const List& lst) {  // 有什么值得改进的？
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
