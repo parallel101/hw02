@@ -78,6 +78,7 @@ private:
 
 public:
     explicit ConstIterator(node_pointer ptr) noexcept : ptr(ptr) { }
+
     ConstIterator(Iterator<L> iter) noexcept : ptr(iter.ptr) { }
 
     [[nodiscard]] inline reference operator*() const noexcept {
