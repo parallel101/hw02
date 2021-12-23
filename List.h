@@ -64,6 +64,7 @@ class ConstIterator
 {
 public:
     template<class E> friend class List;
+    template<class E> friend class Iterator;
 
     using iterator_category = std::bidirectional_iterator_tag;
     using value_type = typename L::value_type;
@@ -77,6 +78,7 @@ private:
 
 public:
     explicit ConstIterator(node_pointer ptr) noexcept : ptr(ptr) { }
+    ConstIterator(Iterator<L> iter) noexcept : ptr(iter.ptr) { }
 
     [[nodiscard]] inline reference operator*() const noexcept {
         return ptr->value;
@@ -136,6 +138,7 @@ class Iterator
 {
 public:
     template<class E> friend class List;
+    template<class E> friend class ConstIterator;
 
     using iterator_category = std::bidirectional_iterator_tag;
     using value_type = typename L::value_type;
@@ -149,6 +152,8 @@ private:
 
 public:
     explicit Iterator(node_pointer ptr) noexcept : ptr(ptr) { }
+
+    Iterator(ConstIterator<L> ci) : ptr(ci.ptr) { }
 
     [[nodiscard]] inline reference operator*() {
         return ptr->value;
@@ -303,7 +308,8 @@ public:
         while (first != last) {
             if (dstf == dstl)
                 break;
-            auto next = first + 1;
+            auto next = first;
+            ++next;
             // *dstf = *first; // 为什么不用这个？
             // 因为最小依赖实现，一个class可以没有拷贝赋值函数，但一定有析构和拷贝构造函数.
             // 为什么可以原地构造，因为大小够用，同一类型，在第一次构造时编译器就知道了大小信息。
@@ -489,10 +495,11 @@ public:
     template<class I>
         requires is_iterator_v<I>
     iterator insert_before(const_iterator pos, I first, I last) {
-        iterator ret = pos;
+        iterator ret(pos.ptr);
         bool mark = true;
         while (first != last) {
-            auto next = first + 1;
+            auto next = first;
+            ++next;
             pos = insert_before(pos, *first);
             if (mark) {
                 mark = false;
@@ -675,7 +682,7 @@ private:
 
     // construct class in-place
     template<class... Args>
-    inline void _construct(iterator pos, Args&&... args) {
+    inline void _construct(const_iterator pos, Args&&... args) {
         _construct(std::addressof(pos.ptr->value), std::forward<Args>(args)...);
     }
 
