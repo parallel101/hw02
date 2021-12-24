@@ -64,8 +64,8 @@ template<class L>
 class Iterator
 {
 public:
-    template<class E> friend class List;
-    template<class E> friend class ConstIterator;
+    template<class> friend class List;
+    template<class> friend class ConstIterator;
 
     using iterator_category = std::bidirectional_iterator_tag;
     using value_type = typename L::value_type;
@@ -137,8 +137,8 @@ template<class L>
 class ConstIterator
 {
 public:
-    template<class E> friend class List;
-    template<class E> friend class Iterator;
+    template<class> friend class List;
+    template<class> friend class Iterator;
 
     using iterator_category = std::bidirectional_iterator_tag;
     using value_type = typename L::value_type;
