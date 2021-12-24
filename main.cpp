@@ -1,24 +1,10 @@
-/*
-修改 main.cpp，改良其中的双链表类 List：
-
-    避免函数参数不必要的拷贝 5 分
-    修复智能指针造成的问题 10 分
-    改用 unique_ptr<Node> 10 分
-    实现拷贝构造函数为深拷贝 15 分
-    说明为什么可以删除拷贝赋值函数 5 分
-    改进 Node 的构造函数 5 分
-
-并通过 main() 函数中的基本测试。
- */
 /* 基于智能指针实现双向链表 */
 #include <cstdio>
 #include <memory>
 #include <iostream>
 
 struct Node {
-    /*
-       prev存在是初始的时候就确定，而next有可能为null或者别的节点，因此更倾向于将prev       设置为unique_ptr。两个shared_ptr可能会导致相互指向，而没办法销毁资源。
-    */
+    
     int value;
     std::unique_ptr<Node> next;
     Node* prev;
