@@ -487,8 +487,6 @@ public:
     // returns an iterator pointing to the inserted value
     // [pos->prev] [node] [pos]
     iterator insert_before(const_iterator pos, value_type const& x) {
-        if (size() == max_size())
-            throw std::out_of_range("list too long");
         auto node = std::make_unique<node_type>(x);
         return _insert_before(pos, node);
     }
@@ -524,8 +522,6 @@ public:
     // returns an iterator pointing to the inserted value
     // [pos->prev] [node] [pos]
     iterator insert_before(const_iterator pos, value_type&& x) {
-        if (size() == max_size())
-            throw std::out_of_range("list too long");
         auto node = std::move(_make_node(std::move(x)));
         return _insert_before(pos, node);
     }
@@ -581,8 +577,6 @@ public:
     // returns an iterator pointing to the constructed value
     template<class... Args>
     iterator emplace_before(const_iterator pos, Args&&... args) {
-        if (size() == max_size())
-            throw std::out_of_range("list too long");
         auto node = std::move(_make_node(std::forward<Args>(args)...));
         return _insert_before(pos, node);
     }
