@@ -1,0 +1,22 @@
+[ 1 4 9 2 8 5 7 ]
+~Node()
+[ 1 4 2 8 5 7 ]
+List 被拷贝！
+~Node()
+[ 1 4 2 5 7 ]
+[ 1 4 2 8 5 7 ]
+~Node()
+~Node()
+~Node()
+~Node()
+~Node()
+~Node()
+~Node()
+~Node()
+~Node()
+~Node()
+~Node()
+~Node()
+~Node()
+~Node()
+~Node()
