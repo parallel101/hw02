@@ -231,6 +231,9 @@ private:
     std::unique_ptr<node_type> m_head;
     // last->next --> m_tail
     // m_tail->prev --> last
+    // 多一个tail节点：1是为了end()返回迭代器时不用返回nullptr，方便迭代器操作
+    // 2因为next要持有节点，所以不能做成闭环的链表，这样m_head就是失去头节点作用，资源也无法释放
+    // m_stage是一个tail节点的暂存区
     std::unique_ptr<node_type> m_stage;
     std::unique_ptr<node_type>* m_tail = nullptr;
 
@@ -523,10 +526,7 @@ public:
     iterator insert_before(const_iterator pos, value_type&& x) {
         if (size() == max_size())
             throw std::out_of_range("list too long");
-
-        auto node = std::move(_make_node());
-        _construct(std::addressof(node->value), std::move(x));
-
+        auto node = std::move(_make_node(std::move(x)));
         return _insert_before(pos, node);
     }
 
@@ -583,10 +583,7 @@ public:
     iterator emplace_before(const_iterator pos, Args&&... args) {
         if (size() == max_size())
             throw std::out_of_range("list too long");
-
-        auto node = std::move(_make_node());
-        _construct(std::addressof(node->value), std::forward<Args>(args)...);
-
+        auto node = std::move(_make_node(std::forward<Args>(args)...));
         return _insert_before(pos, node);
     }
 
@@ -690,12 +687,16 @@ private:
 
     ///////// Helper
     // make node shortcut
-    // gcc和clang下面使用decltype(auto)会奔溃，为什么？
-    std::unique_ptr<node_type> _make_node() {
+    // 使用decltype(auto)会奔溃，为什么？
+    template<class... Args>
+    [[nodiscard]] std::unique_ptr<node_type> _make_node(Args&&... args) {
+        static constexpr auto nargs = sizeof...(Args);
         auto node = _alloc<node_type>();
         node->prev = nullptr;
         _construct(std::addressof(node->next), nullptr);
-        return std::move(std::unique_ptr<node_type>(node));
+        if constexpr (nargs)
+            _construct(std::addressof(node->value), std::forward<Args>(args)...);
+        return std::move(std::unique_ptr<node_type>(node)); //RVO
     }
 
     // init essential control member
