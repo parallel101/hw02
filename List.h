@@ -663,13 +663,13 @@ private:
     ///////// Alloc
     // alloc a new memory block
     template<class T>
-    T* _alloc() {
+    [[nodiscard]] inline T* _alloc() {
         return static_cast<T*>(::operator new(sizeof(T)));
     }
 
     template<class T>
     // call class destructor
-    inline void _destory(T* p) {
+    inline void _destory(T* p) noexcept {
         p->~T();
     }
 
@@ -700,7 +700,7 @@ private:
     }
 
     // init essential control member
-    void _init() {
+    void _init() noexcept {
         m_head = std::move(_make_node());
         m_stage = std::move(_make_node());
         m_stage->prev = m_head.get();
