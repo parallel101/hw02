@@ -3,52 +3,55 @@
 #include <memory>
 
 struct Node {
-    // 这两个指针会造成什么问题？请修复
-    std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
+    // 这两个指针会造成什么问题？请修复，会构成循环引用，可以把prev变为weak_ptr.
+    std::unique_ptr<Node> next;
+    Node* prev;
     // 如果能改成 unique_ptr 就更好了!
 
     int value;
 
-    // 这个构造函数有什么可以改进的？
-    Node(int val) {
-        value = val;
-    }
-
-    void insert(int val) {
-        auto node = std::make_shared<Node>(val);
-        node->next = next;
-        node->prev = prev;
-        if (prev)
-            prev->next = node;
-        if (next)
-            next->prev = node;
+    // 这个构造函数有什么可以改进的？ ans: 使用explicit，防止隐式转换; 改为初始化表达式，减少一次赋值操作。
+    explicit Node(int val): value(val), prev(nullptr) {
     }
 
     void erase() {
-        if (prev)
-            prev->next = next;
-        if (next)
+        if (next){
             next->prev = prev;
+        }
+            
+        if (prev){
+            prev->next = std::move(next);
+        }
+        
     }
 
     ~Node() {
-        printf("~Node()\n");   // 应输出多少次？为什么少了？
+        printf("~Node()\n");   // 应输出多少次？为什么少了？ans: 应该13次，因为是浅拷贝，所以最初版本应该是7次，但是有循环引用，只在erase时候释放了两个Node,无法释放剩余的5个Node。
     }
 };
 
 struct List {
-    std::shared_ptr<Node> head;
+    std::unique_ptr<Node> head;
 
     List() = default;
 
-    List(List const &other) {
+    List(List const &other){
         printf("List 被拷贝！\n");
-        head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
+        if(!other.head) return;
+        head = std::make_unique<Node>(other.head->value);
+        Node* ori = head.get();
+        for (auto curr = other.front()->next.get(); curr; curr = curr->next.get()) {
+            std::unique_ptr<Node> next = std::make_unique<Node>(curr->value);
+            next->prev = ori;
+            ori->next = std::move(next);
+            ori = ori->next.get();
+        }
     }
 
-    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
+    
+
+    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？ans：不清楚，难道是 a = {} 这里调用的移动赋值？
 
     List(List &&) = default;
     List &operator=(List &&) = default;
@@ -59,20 +62,21 @@ struct List {
 
     int pop_front() {
         int ret = head->value;
-        head = head->next;
+        head = std::move(head->next);
+        head->prev = nullptr;
         return ret;
     }
 
     void push_front(int value) {
-        auto node = std::make_shared<Node>(value);
-        node->next = head;
-        if (head)
-            head->prev = node;
-        head = node;
+        auto node = std::make_unique<Node>(value);
+        if(head)
+            head->prev = node.get();
+        node->next = std::move(head);
+        head = std::move(node);
     }
 
     Node *at(size_t index) const {
-        auto curr = front();
+        Node* curr = front();
         for (size_t i = 0; i < index; i++) {
             curr = curr->next.get();
         }
@@ -80,7 +84,7 @@ struct List {
     }
 };
 
-void print(List lst) {  // 有什么值得改进的？
+void print(const List& lst) {  // 有什么值得改进的？ans: 传入const引用
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
