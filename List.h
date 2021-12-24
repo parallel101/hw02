@@ -456,31 +456,31 @@ public:
     }
 
     // inserts an element to the beginning
-    // return: Iterator pointing to the pushed value
+    // returns an iterator pointing to the pushed value
     iterator push_front(value_type const& x) {
         return insert_before(begin(), x);
     }
 
     // inserts an element to the beginning, move x
-    // return: Iterator pointing to the pushed value
+    // returns an iterator pointing to the pushed value
     iterator push_front(value_type&& x) {
         return insert_before(begin(), std::move(x));
     }
 
     // adds an element to the end
-    // return: Iterator pointing to the pushed value
+    // returns an iterator pointing to the pushed value
     iterator push_back(value_type const& x) {
         return insert_before(end(), x);
     }
 
     // adds an element to the end, move x
-    // return: Iterator pointing to the pushed value
+    // returns an iterator pointing to the pushed value
     iterator push_back(value_type&& x) {
         return insert_before(end(), std::move(x));
     }
 
     // inserts elements before pos
-    // return: Iterator pointing to the inserted value
+    // returns an iterator pointing to the inserted value
     // [pos->prev] [node] [pos]
     iterator insert_before(const_iterator pos, value_type const& x) {
         if (size() == max_size())
@@ -490,7 +490,7 @@ public:
     }
 
     // inserts [first, last) elements before pos
-    // return: Iterator pointing to the first element inserted, or pos if first==last.
+    // returns an iterator pointing to the first element inserted, or pos if first==last.
     template<class I>
         requires is_iterator_v<I>
     iterator insert_before(const_iterator pos, I first, I last) {
@@ -511,13 +511,13 @@ public:
     }
 
     // inserts initializer_list elements before pos
-    // return: Iterator pointing to the first element inserted, or pos if first==last.
+    // returns an iterator pointing to the first element inserted, or pos if first==last.
     iterator insert_before(const_iterator pos, std::initializer_list<value_type> il) {
         return insert_before(pos, il.begin(), il.end());
     }
 
     // inserts elements before pos, move x
-    // return: Iterator pointing to the inserted value
+    // returns an iterator pointing to the inserted value
     // [pos->prev] [node] [pos]
     iterator insert_before(const_iterator pos, value_type&& x) {
         if (size() == max_size())
@@ -530,7 +530,7 @@ public:
     }
 
     // inserts elements after pos
-    // return: Iterator pointing to the inserted value
+    // returns an iterator pointing to the inserted value
     // [pos] [node] [pos->next]
     iterator insert_after(const_iterator pos, value_type const& x) {
         // 对于empty list，insert_after(begin) == insert_after(end)
@@ -540,7 +540,7 @@ public:
     }
 
     // inserts [first, last) elements after pos
-    // return: Iterator pointing to the first element inserted, or pos if first==last.
+    // returns an iterator pointing to the first element inserted, or pos if first==last.
     template<class I>
         requires is_iterator_v<I>
     iterator insert_after(const_iterator pos, I first, I last) {
@@ -560,13 +560,13 @@ public:
     }
 
     // inserts initializer_list elements after pos
-    // return: Iterator pointing to the first element inserted, or pos if first==last.
+    // returns an iterator pointing to the first element inserted, or pos if first==last.
     iterator insert_after(const_iterator pos, std::initializer_list<value_type> il) {
         return insert_after(pos, il.begin(), il.end());
     }
 
     // inserts elements after pos, move x
-    // return: Iterator pointing to the inserted value
+    // returns an iterator pointing to the inserted value
     // [pos] [node] [pos->next]
     iterator insert_after(const_iterator pos, value_type&& x) {
         // 对于empty list，insert_after(begin) == insert_after(end)
@@ -577,7 +577,7 @@ public:
 
     ///////// Emplace
     // constructs an element in-place before pos
-    // return: Iterator pointing to the constructed value
+    // returns an iterator pointing to the constructed value
     template<class... Args>
     iterator emplace_before(const_iterator pos, Args&&... args) {
         if (size() == max_size())
@@ -590,7 +590,7 @@ public:
     }
 
     // constructs an element in-place after pos
-    // return: Iterator pointing to the constructed value
+    // returns an iterator pointing to the constructed value
     template<class... Args>
     iterator emplace_after(const_iterator pos, Args&&... args) {
         if (pos.ptr == m_tail->get())
@@ -599,14 +599,14 @@ public:
     }
 
     // constructs an element in-place at the end
-    // return: Iterator pointing to the constructed value
+    // returns an iterator pointing to the constructed value
     template<class... Args>
     iterator emplace_back(Args&&... args) {
         return emplace_before(end(), std::forward<Args>(args)...);
     }
 
     // constructs an element in-place at the beginning
-    // return: Iterator pointing to the constructed value
+    // returns an iterator pointing to the constructed value
     template<class... Args>
     iterator emplace_front(Args&&... args) {
         return emplace_before(begin(), std::forward<Args>(args)...);
@@ -622,7 +622,7 @@ public:
     }
 
     // erases elements at pos
-    // return: Iterator following the last removed element.
+    // returns an iterator following the last removed element.
     iterator erase(const_iterator pos) {
         if (0 == size())
             throw std::out_of_range("erase on an empty list");
@@ -643,7 +643,7 @@ public:
     }
 
     // erases [first, last) elements
-    // return: Iterator following the last removed element.
+    // returns an iterator following the last removed element.
     iterator erase(const_iterator first, const_iterator last) {
         iterator pos = iterator(first.ptr);
         while (first != last) {
@@ -715,7 +715,7 @@ private:
     }
 
     // insert the node to place that before pos
-    // return: Iterator pointing to the inserted value
+    // returns an iterator pointing to the inserted value
     iterator _insert_before(const_iterator pos, std::unique_ptr<node_type>& node) {
         if (size() == max_size())
             throw std::out_of_range("list too long");
