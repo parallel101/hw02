@@ -69,7 +69,8 @@ public:
 
     using iterator_category = std::bidirectional_iterator_tag;
     using value_type = typename L::value_type;
-    using difference_type = typename L::difference_type;
+    // 因为List的iterator不是基于数组，iterator与数字运算的范围在List::size() 的size_type内。
+    using difference_type = typename L::size_type; // difference_type
     using pointer = typename L::pointer;
     using reference = typename L::reference;
     using node_pointer = typename L::node_pointer;
@@ -110,14 +111,14 @@ public:
         return ret;
     }
 
-    inline Iterator operator+(size_t n) {
+    inline Iterator operator+(difference_type n) {
         Iterator lt = *this;
         while (n--)
             ++lt;
         return lt;
     }
 
-    inline Iterator operator-(size_t n) {
+    inline Iterator operator-(difference_type n) {
         Iterator lt = *this;
         while (n--)
             --lt;
@@ -185,14 +186,14 @@ public:
         return ret;
     }
 
-    inline ConstIterator operator+(size_t n) {
+    inline ConstIterator operator+(difference_type n) {
         ConstIterator lt = *this;
         while (n--)
             ++lt;
         return lt;
     }
 
-    inline ConstIterator operator-(size_t n) {
+    inline ConstIterator operator-(difference_type n) {
         ConstIterator lt = *this;
         while (n--)
             --lt;
