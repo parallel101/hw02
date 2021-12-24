@@ -35,9 +35,11 @@ struct List {
 
     List() = default;
 
-    List(List const &other): head(std::make_unique<Node>(other.head->value)) {
+    List(List const &other){
         printf("List 被拷贝！\n");
         // 请实现拷贝构造函数为 **深拷贝**
+        if(!other.head) return;
+        head = std::make_unique<Node>(other.head->value);
         Node* ori = head.get();
         for (auto curr = other.front()->next.get(); curr; curr = curr->next.get()) {
             std::unique_ptr<Node> next = std::make_unique<Node>(curr->value);
