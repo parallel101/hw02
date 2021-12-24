@@ -59,6 +59,80 @@ struct Node {
     }
 };
 
+// ConstIterator中使用了Iterator，所以gcc要求Iterator声明或者定义要在ConstIterator前面，但msvc都可以
+template<class L>
+class Iterator
+{
+public:
+    template<class E> friend class List;
+    template<class E> friend class ConstIterator;
+
+    using iterator_category = std::bidirectional_iterator_tag;
+    using value_type = typename L::value_type;
+    using difference_type = typename L::difference_type;
+    using pointer = typename L::pointer;
+    using reference = typename L::reference;
+    using node_pointer = typename L::node_pointer;
+
+private:
+    node_pointer ptr = nullptr;
+
+public:
+    explicit Iterator(node_pointer ptr) noexcept : ptr(ptr) { }
+
+    [[nodiscard]] inline reference operator*() {
+        return ptr->value;
+    }
+
+    [[nodiscard]] inline pointer operator->() noexcept {
+        return std::pointer_traits<pointer>::pointer_to(**this);
+    }
+
+    inline Iterator& operator++() {
+        ptr = ptr->next.get();
+        return *this;
+    }
+
+    inline Iterator operator++(int) {
+        Iterator ret = *this;
+        ptr = ptr->next.get();
+        return ret;
+    }
+
+    inline Iterator& operator--() {
+        ptr = ptr->prev;
+        return *this;
+    }
+
+    inline Iterator operator--(int) {
+        Iterator ret = *this;
+        ptr = ptr->prev;
+        return ret;
+    }
+
+    inline Iterator operator+(size_t n) {
+        Iterator lt = *this;
+        while (n--)
+            ++lt;
+        return lt;
+    }
+
+    inline Iterator operator-(size_t n) {
+        Iterator lt = *this;
+        while (n--)
+            --lt;
+        return lt;
+    }
+
+    friend inline bool operator==(Iterator const& x, Iterator const& y) {
+        return x.ptr == y.ptr;
+    }
+
+    friend inline bool operator!=(Iterator const& x, Iterator const& y) {
+        return !(x == y);
+    }
+};
+
 template<class L>
 class ConstIterator
 {
@@ -130,79 +204,6 @@ public:
     }
 
     friend inline bool operator!=(ConstIterator const& x, ConstIterator const& y) {
-        return !(x == y);
-    }
-};
-
-template<class L>
-class Iterator
-{
-public:
-    template<class E> friend class List;
-    template<class E> friend class ConstIterator;
-
-    using iterator_category = std::bidirectional_iterator_tag;
-    using value_type = typename L::value_type;
-    using difference_type = typename L::difference_type;
-    using pointer = typename L::pointer;
-    using reference = typename L::reference;
-    using node_pointer = typename L::node_pointer;
-
-private:
-    node_pointer ptr = nullptr;
-
-public:
-    explicit Iterator(node_pointer ptr) noexcept : ptr(ptr) { }
-
-    [[nodiscard]] inline reference operator*() {
-        return ptr->value;
-    }
-
-    [[nodiscard]] inline pointer operator->() noexcept {
-        return std::pointer_traits<pointer>::pointer_to(**this);
-    }
-
-    inline Iterator& operator++() {
-        ptr = ptr->next.get();
-        return *this;
-    }
-
-    inline Iterator operator++(int) {
-        Iterator ret = *this;
-        ptr = ptr->next.get();
-        return ret;
-    }
-
-    inline Iterator& operator--() {
-        ptr = ptr->prev;
-        return *this;
-    }
-
-    inline Iterator operator--(int) {
-        Iterator ret = *this;
-        ptr = ptr->prev;
-        return ret;
-    }
-
-    inline Iterator operator+(size_t n) {
-        Iterator lt = *this;
-        while (n--)
-            ++lt;
-        return lt;
-    }
-
-    inline Iterator operator-(size_t n) {
-        Iterator lt = *this;
-        while (n--)
-            --lt;
-        return lt;
-    }
-
-    friend inline bool operator==(Iterator const& x, Iterator const& y) {
-        return x.ptr == y.ptr;
-    }
-
-    friend inline bool operator!=(Iterator const& x, Iterator const& y) {
         return !(x == y);
     }
 };
