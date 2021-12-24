@@ -10,9 +10,8 @@
 #endif
 #endif
 
-#include "List.h"
-
 #include <list>
+#include "List.h"
 
 template<class E>
 void print(parallel101::List<E> const& lst) {  // 有什么值得改进的？
@@ -26,14 +25,35 @@ void print(parallel101::List<E> const& lst) {  // 有什么值得改进的？
     printf(" ]\n");
 }
 
-void runcase()
-{
+void runcase();
+void runcase1();
+
+int main() {
+#ifdef WIN32
+#ifdef _DEBUG
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG);
+#endif
+#endif
+
+    runcase();
+    if (0) {
+        runcase1();
+    }
+
+#ifdef WIN32
+#ifdef _DEBUG
+    _CrtDumpMemoryLeaks();
+#endif
+#endif
+    return 0;
+}
+
+void runcase() {
     using namespace parallel101;
     using List = List<int>;
 
     List a;
-    List z;
-    a.swap(z);
 
     a.push_front(7);
     a.push_front(5);
@@ -44,7 +64,6 @@ void runcase()
     a.push_front(1);
 
     print(a);   // [ 1 4 9 2 8 5 7 ]
-
 
     //a.at(2)->erase();
     a.erase(a.begin() + 2);
@@ -61,6 +80,14 @@ void runcase()
 
     b = {};
     a = {};
+}
+
+void runcase1() {
+    using namespace parallel101;
+    using List = List<int>;
+
+    List a;
+    List b;
 
     /// more tests
     auto s = { 3, 1, 4, 1, 5 };
@@ -199,22 +226,4 @@ void runcase()
     b.push_back(std::move(12));
     b.push_front(std::move(13));
     print(b);   // [ 13 9 10 3 2 1 12 ]
-}
-
-int main() {
-#ifdef WIN32
-#ifdef _DEBUG
-    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG);
-#endif
-#endif
-
-    runcase();
-
-#ifdef WIN32
-#ifdef _DEBUG
-    _CrtDumpMemoryLeaks();
-#endif
-#endif
-    return 0;
 }

@@ -55,7 +55,7 @@ struct Node {
     ~Node() noexcept {
         printf("~Node()\n");   // 应输出多少次？为什么少了？
         // 从测试案例来看，最后一次应该连续输出5+6=11次，因为我们不是深度拷贝所以会少一些.
-        // 把迭代器和unique_ptr实现后，会追加head和tail两个Node，所以每个list会再多输出两次, 总共是23
+        // 把迭代器和unique_ptr实现后，会追加head和tail两个Node，所以每个list会再多输出两次, 总共是15
     }
 };
 
@@ -233,9 +233,9 @@ private:
     // m_tail->prev --> last
     // 多一个tail节点：1是为了end()返回迭代器时不用返回nullptr，方便迭代器操作
     // 2因为next要持有节点，所以不能做成闭环的链表，这样m_head就是失去头节点作用，资源也无法释放
+    std::unique_ptr<node_type>* m_tail = nullptr;
     // m_stage是一个tail节点的暂存区
     std::unique_ptr<node_type> m_stage;
-    std::unique_ptr<node_type>* m_tail = nullptr;
 
     size_type m_size = 0;
 
