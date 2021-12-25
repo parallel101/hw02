@@ -3,15 +3,15 @@
 #include <memory>
 
 struct Node {
-    // 这两个指针会造成什么问题？请修复
+    // 这两个指针会造成什么问题？请修复  std::shared_ptr会造成循环引用
     std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
+    std::weak_ptr<Node> prev;
     // 如果能改成 unique_ptr 就更好了!
 
     int value;
 
-    // 这个构造函数有什么可以改进的？
-    Node(int val) {
+    // 这个构造函数有什么可以改进的？  加上 explicit 避免编译器自动隐式转换
+    explicit Node(int val) {
         value = val;
     }
 
@@ -19,21 +19,21 @@ struct Node {
         auto node = std::make_shared<Node>(val);
         node->next = next;
         node->prev = prev;
-        if (prev)
-            prev->next = node;
+        if (!prev.expired())
+            prev.lock()->next = node;
         if (next)
             next->prev = node;
     }
 
     void erase() {
-        if (prev)
-            prev->next = next;
+        if (!prev.expired())
+            prev.lock()->next = next;
         if (next)
             next->prev = prev;
     }
 
     ~Node() {
-        printf("~Node()\n");   // 应输出多少次？为什么少了？
+        printf("~Node()\n");   // 应输出多少次？为什么少了？ 7次，少了的原因是循环引用，引用计数无法归零，也就无法调用析构。
     }
 };
 
@@ -43,12 +43,15 @@ struct List {
     List() = default;
 
     List(List const &other) {
-        printf("List 被拷贝！\n");
-        head = other.head;  // 这是浅拷贝！
+        printf("List was copied!\n");
+        //head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
+        head = std::make_shared<Node>(other.head->value);
+        head->next = other.head->next;
+        head->prev = other.head->prev;
     }
 
-    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
+    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？  因为有移动赋值函数，在没有拷贝赋值的情况下，编译器会自动调用移动赋值
 
     List(List &&) = default;
     List &operator=(List &&) = default;
@@ -80,7 +83,7 @@ struct List {
     }
 };
 
-void print(List lst) {  // 有什么值得改进的？
+void print(const List& lst) {  // 有什么值得改进的？
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
