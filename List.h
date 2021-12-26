@@ -143,7 +143,7 @@ public:
 
     using iterator_category = std::bidirectional_iterator_tag;
     using value_type = typename L::value_type;
-    using difference_type = typename L::difference_type;
+    using difference_type = typename L::size_type;
     using pointer = typename L::const_pointer;
     using reference = typename L::const_reference;
     using node_pointer = typename L::node_pointer;
