@@ -21,7 +21,7 @@ template <class T>
 struct is_iterator<T, std::void_t<typename std::iterator_traits<T>::iterator_category>> : std::true_type { };
 
 template <class T>
-inline constexpr bool is_iterator_v = is_iterator<T>::value;
+constexpr bool is_iterator_v = is_iterator<T>::value;
 
 template<class E>
 struct Node {
@@ -50,9 +50,9 @@ struct Node {
     // 这个构造函数有什么可以改进的？
     // 1 使用explicit避免隐式构造类型；
     // 2 把value赋值改到 initializer list
-    explicit Node(value_type const& val) : value(val) { }
+    constexpr explicit Node(value_type const& val) : value(val) { }
 
-    ~Node() noexcept {
+    constexpr ~Node() noexcept {
         printf("~Node()\n");   // 应输出多少次？为什么少了？
         // 从测试案例来看，最后一次应该连续输出5+6=11次，因为我们不是深度拷贝所以会少一些.
         // 把迭代器和unique_ptr实现后，会追加head和tail两个Node，所以每个list会再多输出两次, 总共是15
@@ -79,57 +79,57 @@ private:
     node_pointer ptr = nullptr;
 
 public:
-    explicit Iterator(node_pointer ptr) noexcept : ptr(ptr) { }
+    constexpr explicit Iterator(node_pointer ptr) noexcept : ptr(ptr) { }
 
-    [[nodiscard]] inline reference operator*() {
+    [[nodiscard]] constexpr reference operator*() {
         return ptr->value;
     }
 
-    [[nodiscard]] inline pointer operator->() noexcept {
+    [[nodiscard]] constexpr pointer operator->() noexcept {
         return std::pointer_traits<pointer>::pointer_to(**this);
     }
 
-    inline Iterator& operator++() {
+    constexpr Iterator& operator++() {
         ptr = ptr->next.get();
         return *this;
     }
 
-    inline Iterator operator++(int) {
+    constexpr Iterator operator++(int) {
         Iterator ret = *this;
         ptr = ptr->next.get();
         return ret;
     }
 
-    inline Iterator& operator--() {
+    constexpr Iterator& operator--() {
         ptr = ptr->prev;
         return *this;
     }
 
-    inline Iterator operator--(int) {
+    constexpr Iterator operator--(int) {
         Iterator ret = *this;
         ptr = ptr->prev;
         return ret;
     }
 
-    inline Iterator operator+(difference_type n) {
+    constexpr Iterator operator+(difference_type n) {
         Iterator lt = *this;
         while (n--)
             ++lt;
         return lt;
     }
 
-    inline Iterator operator-(difference_type n) {
+    constexpr Iterator operator-(difference_type n) {
         Iterator lt = *this;
         while (n--)
             --lt;
         return lt;
     }
 
-    friend inline bool operator==(Iterator const& x, Iterator const& y) {
+    friend constexpr bool operator==(Iterator const& x, Iterator const& y) {
         return x.ptr == y.ptr;
     }
 
-    friend inline bool operator!=(Iterator const& x, Iterator const& y) {
+    friend constexpr bool operator!=(Iterator const& x, Iterator const& y) {
         return !(x == y);
     }
 };
@@ -152,59 +152,59 @@ private:
     node_pointer ptr = nullptr;
 
 public:
-    explicit ConstIterator(node_pointer ptr) noexcept : ptr(ptr) { }
+    constexpr explicit ConstIterator(node_pointer ptr) noexcept : ptr(ptr) { }
 
-    ConstIterator(Iterator<L> iter) noexcept : ptr(iter.ptr) { }
+    constexpr ConstIterator(Iterator<L> iter) noexcept : ptr(iter.ptr) { }
 
-    [[nodiscard]] inline reference operator*() const noexcept {
+    [[nodiscard]] constexpr reference operator*() const noexcept {
         return ptr->value;
     }
 
-    [[nodiscard]] inline pointer operator->() const noexcept {
+    [[nodiscard]] constexpr pointer operator->() const noexcept {
         return std::pointer_traits<pointer>::pointer_to(**this);
     }
 
-    inline ConstIterator& operator++() {
+    constexpr ConstIterator& operator++() {
         ptr = ptr->next.get();
         return *this;
     }
 
-    inline ConstIterator operator++(int) {
+    constexpr ConstIterator operator++(int) {
         ConstIterator ret = *this;
         ptr = ptr->next.get();
         return ret;
     }
 
-    inline ConstIterator& operator--() {
+    constexpr ConstIterator& operator--() {
         ptr = ptr->prev;
         return *this;
     }
 
-    inline ConstIterator operator--(int) {
+    constexpr ConstIterator operator--(int) {
         ConstIterator ret = *this;
         ptr = ptr->prev;
         return ret;
     }
 
-    inline ConstIterator operator+(difference_type n) {
+    constexpr ConstIterator operator+(difference_type n) {
         ConstIterator lt = *this;
         while (n--)
             ++lt;
         return lt;
     }
 
-    inline ConstIterator operator-(difference_type n) {
+    constexpr ConstIterator operator-(difference_type n) {
         ConstIterator lt = *this;
         while (n--)
             --lt;
         return lt;
     }
 
-    friend inline bool operator==(ConstIterator const& x, ConstIterator const& y) {
+    friend constexpr bool operator==(ConstIterator const& x, ConstIterator const& y) {
         return x.ptr == y.ptr;
     }
 
-    friend inline bool operator!=(ConstIterator const& x, ConstIterator const& y) {
+    friend constexpr bool operator!=(ConstIterator const& x, ConstIterator const& y) {
         return !(x == y);
     }
 };
@@ -243,12 +243,12 @@ private:
 public:
     ///////// Constructor & Destructor
     // constructs the list
-    List() {
+    constexpr List() {
         _init();
     }
 
     // constructs the list
-    List(List const& lst) :List() {
+    constexpr List(List const& lst) :List() {
         printf("List 被拷贝！\n");
         // head = lst.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
@@ -256,23 +256,23 @@ public:
     }
 
     // constructs the list
-    List(size_type n, value_type const& x) :List() {
+    constexpr List(size_type n, value_type const& x) :List() {
         while (n--)
             push_back(x);
     }
 
     // constructs the list
-    List(std::initializer_list<value_type> il) :List() {
+    constexpr List(std::initializer_list<value_type> il) :List() {
         assign(il.begin(), il.end());
     }
 
     // constructs the list, move 'lst' element.
-    List(List&& lst) noexcept :List() {
+    constexpr List(List&& lst) noexcept :List() {
         swap(lst);
     }
 
     // destructs the list
-    ~List() noexcept {
+    constexpr ~List() noexcept {
         _clear();
     }
 
@@ -281,14 +281,14 @@ public:
     // 因为编译器会调用这个List& operator=(List&&)函数来代替
 
     // assigns values to the container
-    List& operator=(List const& lst) {
+    constexpr List& operator=(List const& lst) {
         if (this != &lst)
             assign(lst.begin(), lst.end());
         return *this;
     }
 
     // assigns values to the container, move 'lst' element.
-    List& operator=(List&& lst) noexcept {
+    constexpr List& operator=(List&& lst) noexcept {
         if (this != &lst) {
             clear();
             swap(lst);
@@ -297,14 +297,14 @@ public:
     }
 
     // assigns values to the container
-    List& operator=(std::initializer_list<value_type> il) {
+    constexpr List& operator=(std::initializer_list<value_type> il) {
         assign(il.begin(), il.end()); return *this;
     }
 
     // assigns values to the container
     template<class I>
         requires is_iterator_v<I> //IFNOT: the associated constraints are not satisfied
-    void assign(I first, I const last) {
+    constexpr void assign(I first, I const last) {
         if (first == last)
             return;
         auto dstf = begin();
@@ -330,41 +330,41 @@ public:
     }
 
     // assigns values to the container
-    void assign(std::initializer_list<value_type> il) {
+    constexpr void assign(std::initializer_list<value_type> il) {
         assign(il.begin(), il.end());
     }
 
     ///////// Element access
     // access the first element
-    [[nodiscard]] reference front() {
+    [[nodiscard]] constexpr reference front() {
         if (0 == size())
             throw std::out_of_range("front on an empty list");
         return m_head->next->value;
     }
 
     // access the first element
-    [[nodiscard]] const_reference front() const {
+    [[nodiscard]] constexpr const_reference front() const {
         if (0 == size())
             throw std::out_of_range("front on an empty list");
         return m_head->next->value;
     }
 
     // access the last element
-    [[nodiscard]] reference back() {
+    [[nodiscard]] constexpr reference back() {
         if (0 == size())
             throw std::out_of_range("back on an empty list");
         return (*m_tail)->prev->value;
     }
 
     // access the last element
-    [[nodiscard]] const_reference back() const {
+    [[nodiscard]] constexpr const_reference back() const {
         if (0 == size())
             throw std::out_of_range("back on an empty list");
         return (*m_tail)->prev->value;
     }
 
     // access the [index] element
-    [[nodiscard]] reference at(size_type index) {
+    [[nodiscard]] constexpr reference at(size_type index) {
         if (index >= size())
             throw std::out_of_range("at index out of range");
         auto curr = m_head->next.get();
@@ -374,7 +374,7 @@ public:
     }
 
     // access the [index] element
-    [[nodiscard]] const_reference at(size_type index) const {
+    [[nodiscard]] constexpr const_reference at(size_type index) const {
         if (index >= size())
             throw std::out_of_range("at index out of range");
         auto curr = m_head->next.get();
@@ -385,53 +385,53 @@ public:
 
     ///////// Iterators
     // returns an iterator to the beginning
-    [[nodiscard]] inline iterator begin() noexcept {
+    [[nodiscard]] constexpr iterator begin() noexcept {
         return iterator(m_head->next.get());
     }
 
     // returns an iterator to the beginning
-    [[nodiscard]] inline const_iterator begin() const noexcept {
+    [[nodiscard]] constexpr const_iterator begin() const noexcept {
         return const_iterator(m_head->next.get());
     }
 
     // returns an iterator to the beginning
-    [[nodiscard]] inline const_iterator cbegin() const noexcept {
+    [[nodiscard]] constexpr const_iterator cbegin() const noexcept {
         return begin();
     }
 
     // returns an iterator to the end
-    [[nodiscard]] inline iterator end() noexcept {
+    [[nodiscard]] constexpr iterator end() noexcept {
         return iterator(m_tail->get());
     }
 
     // returns an iterator to the end
-    [[nodiscard]] inline const_iterator end() const noexcept {
+    [[nodiscard]] constexpr const_iterator end() const noexcept {
         return const_iterator(m_tail->get());
     }
 
     // returns an iterator to the end
-    [[nodiscard]] inline const_iterator cend() const noexcept {
+    [[nodiscard]] constexpr const_iterator cend() const noexcept {
         return end();
     }
 
     ///////// Capacity
     // checks whether the container is empty
-    [[nodiscard]] inline bool empty() const noexcept {
+    [[nodiscard]] constexpr bool empty() const noexcept {
         return 0 == size();
     }
 
     // returns the number of elements
-    [[nodiscard]] inline size_type size() const noexcept {
+    [[nodiscard]] constexpr size_type size() const noexcept {
         return m_size;
     }
 
     // returns the number of elements
-    [[nodiscard]] inline size_type length() const noexcept {
+    [[nodiscard]] constexpr size_type length() const noexcept {
         return size();
     }
 
     // returns the maximum possible number of elements
-    [[nodiscard]] constexpr inline size_type max_size() const noexcept {
+    [[nodiscard]] constexpr size_type max_size() const noexcept {
         return std::numeric_limits<size_type>::max();
     }
 
@@ -649,7 +649,7 @@ public:
     }
 
     // clears the contents, reinit control member.
-    inline void clear() {
+    constexpr void clear() {
         _clear();
         _init();
     }
@@ -658,44 +658,43 @@ private:
     ///////// Alloc
     // alloc a new memory block
     template<class T>
-    [[nodiscard]] inline T* _alloc() {
+    [[nodiscard]] constexpr T* _alloc() {
         return static_cast<T*>(::operator new(sizeof(T)));
     }
 
     template<class T>
     // call class destructor
-    inline void _destory(T* p) noexcept {
+    constexpr void _destory(T* p) noexcept {
         p->~T();
     }
 
     // construct class in-place
     template<class T, class... Args>
-    inline void _construct(T* ptr, Args&&... args) {
+    constexpr void _construct(T* ptr, Args&&... args) {
         ::new ((void*)ptr) T(std::forward<Args>(args)...);
     }
 
     // construct class in-place
     template<class... Args>
-    inline void _construct(const_iterator pos, Args&&... args) {
+    constexpr void _construct(const_iterator pos, Args&&... args) {
         _construct(std::addressof(pos.ptr->value), std::forward<Args>(args)...);
     }
 
     ///////// Helper
     // make node shortcut
-    // 使用decltype(auto)会奔溃，为什么？
     template<class... Args>
-    [[nodiscard]] std::unique_ptr<node_type> _make_node(Args&&... args) {
+    [[nodiscard]] decltype(auto) _make_node(Args&&... args) {
         static constexpr auto nargs = sizeof...(Args);
         auto node = _alloc<node_type>();
         node->prev = nullptr;
         _construct(std::addressof(node->next), nullptr);
         if constexpr (nargs)
             _construct(std::addressof(node->value), std::forward<Args>(args)...);
-        return std::move(std::unique_ptr<node_type>(node)); //RVO
+        return std::unique_ptr<node_type>(node); //RVO
     }
 
     // init essential control member
-    void _init() noexcept {
+    constexpr void _init() noexcept {
         m_head = std::move(_make_node());
         m_stage = std::move(_make_node());
         m_stage->prev = m_head.get();
@@ -704,7 +703,7 @@ private:
     }
 
     // delete all nodes including control member
-    void _clear() noexcept {
+    constexpr void _clear() noexcept {
         while (m_head)
             m_head = std::move(m_head->next);
         m_size = 0;
@@ -713,7 +712,7 @@ private:
 
     // insert the node to place that before pos
     // returns an iterator pointing to the inserted value
-    iterator _insert_before(const_iterator pos, std::unique_ptr<node_type>& node) {
+    constexpr iterator _insert_before(const_iterator pos, std::unique_ptr<node_type>& node) {
         if (size() == max_size())
             throw std::out_of_range("list too long");
 
