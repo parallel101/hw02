@@ -264,12 +264,12 @@ void runcase_profile() {
         1e+08   3272047         1761303
     */
     std::cout << "N\t" << "std::list\t" << "101::List" << std::endl;
-    auto count = 8;
-    for (auto n = 1; n < count; ++n) {
-        auto times = std::pow(10, n);
-        std::cout << times << '\t'; // float scientific notation
-        std::cout << profile(fstd, static_cast<int32_t>(times)) << "\t\t";
-        std::cout << profile(f101, static_cast<int32_t>(times)) << std::endl;
+    constexpr auto power = 8;
+    for (auto n = 1; n < power; ++n) {
+        auto count = std::pow(10, n);
+        std::cout << count << '\t'; // float scientific notation
+        std::cout << profile(fstd, static_cast<int32_t>(count)) << "\t\t";
+        std::cout << profile(f101, static_cast<int32_t>(count)) << std::endl;
     }
     std::cout << std::flush;
 }
