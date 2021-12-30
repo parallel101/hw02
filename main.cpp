@@ -1,28 +1,34 @@
 /* 基于智能指针实现双向链表 */
 #include <cstdio>
 #include <memory>
-
+#include <iostream>
 struct Node {
     // 这两个指针会造成什么问题？请修复
+    //效率低，循环引用
     std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
+    Node *prev;
+
+    // unique ptr
+    // std::unique_ptr<Node> next;
+    // std::unique_ptr<Node> prev;
     // 如果能改成 unique_ptr 就更好了!
 
     int value;
 
+
     // 这个构造函数有什么可以改进的？
-    Node(int val) {
-        value = val;
+    Node(int val) : value(val) {
+        
     }
 
     void insert(int val) {
         auto node = std::make_shared<Node>(val);
-        node->next = next;
+        node->next = std::move(next);
         node->prev = prev;
         if (prev)
             prev->next = node;
         if (next)
-            next->prev = node;
+            next->prev = node.get();
     }
 
     void erase() {
@@ -35,6 +41,14 @@ struct Node {
     ~Node() {
         printf("~Node()\n");   // 应输出多少次？为什么少了？
     }
+
+    void erasefunc(Node *p){
+        p->erase();
+    }
+
+    void insertfunc(Node *p,int val){
+        p->insert(val);
+    }
 };
 
 struct List {
@@ -42,13 +56,20 @@ struct List {
 
     List() = default;
 
-    List(List const &other) {
+    List(List const &other){
         printf("List 被拷贝！\n");
         head = other.head;  // 这是浅拷贝！
-        // 请实现拷贝构造函数为 **深拷贝**
+        // 请实现拷贝构造函数为 **深拷贝** 
+        //做不出来
+        //memcpy(head,other.head,sizeof(Node));
+	// 
+        //Node *node = new Node(other.head->value);
+        //head.reset(node);
+        //head = std::make_shared<Node>(other.head->value);
+        // head = other.head;
     }
 
-    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
+    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？因为这个List类用shared ptr包装，所以删除不删除都可以
 
     List(List &&) = default;
     List &operator=(List &&) = default;
@@ -67,7 +88,7 @@ struct List {
         auto node = std::make_shared<Node>(value);
         node->next = head;
         if (head)
-            head->prev = node;
+            head->prev = node.get();
         head = node;
     }
 
@@ -80,7 +101,7 @@ struct List {
     }
 };
 
-void print(List lst) {  // 有什么值得改进的？
+void print(List lst) {  // 有什么值得改进的？不太清楚
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
@@ -117,3 +138,4 @@ int main() {
 
     return 0;
 }
+
