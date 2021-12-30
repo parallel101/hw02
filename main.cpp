@@ -234,7 +234,7 @@ void runcase_morefunc() {
 }
 
 void runcase_profile() {
-    auto profile = [](std::function<void(int32_t)> fx, int32_t n) {
+    auto profile = [](void fx(int32_t), int32_t n) {
         auto t0 = std::chrono::high_resolution_clock::now();
         fx(n);
         auto t1 = std::chrono::high_resolution_clock::now();
