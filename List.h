@@ -23,11 +23,11 @@ struct is_iterator<T, std::void_t<typename std::iterator_traits<T>::iterator_cat
 template <class T>
 constexpr bool is_iterator_v = is_iterator<T>::value;
 
-template<class E>
+template<class E, int32_t log_level>
 struct Node {
     using value_type = E;
-    using node_type = Node<E>;
-    using node_pointer = Node<E>*;
+    using node_type = Node;
+    using node_pointer = Node*;
 
     // 这两个指针会造成什么问题？请修复
     // 使用两个shared_ptr, prev-next可能会引起循环引用，造成资源无法释放
@@ -53,7 +53,8 @@ struct Node {
     constexpr explicit Node(value_type const& val) : value(val) { }
 
     constexpr ~Node() noexcept {
-        printf("~Node()\n");   // 应输出多少次？为什么少了？
+        if constexpr (log_level)
+            printf("~Node()\n");   // 应输出多少次？为什么少了？
         // 从测试案例来看，最后一次应该连续输出5+6=11次，因为我们不是深度拷贝所以会少一些.
         // 把迭代器和unique_ptr实现后，会追加head和tail两个Node，所以每个list会再多输出两次, 总共是15
     }
@@ -64,7 +65,7 @@ template<class L>
 class Iterator
 {
 public:
-    template<class> friend class List;
+    template<class, int32_t> friend class List;
     template<class> friend class ConstIterator;
 
     using iterator_category = std::bidirectional_iterator_tag;
@@ -138,7 +139,7 @@ template<class L>
 class ConstIterator
 {
 public:
-    template<class> friend class List;
+    template<class, int32_t> friend class List;
     template<class> friend class Iterator;
 
     using iterator_category = std::bidirectional_iterator_tag;
@@ -209,7 +210,7 @@ public:
     }
 };
 
-template<class E>
+template<class E, int32_t log_level>
 class List {
 public:
     using value_type = E;
@@ -218,9 +219,9 @@ public:
     using pointer = E*;
     using const_pointer = const E*;
     using difference_type = typename std::pointer_traits<pointer>::difference_type; // std::ptrdiff_t
-    using node_type = Node<E>;
-    using node_pointer = Node<E>*;
-    using const_node_pointer = const Node<E>*;
+    using node_type = Node<E, log_level>;
+    using node_pointer = Node<E, log_level>*;
+    using const_node_pointer = const Node<E, log_level>*;
     using size_type = size_t;
     using iterator = Iterator<List>;
     using const_iterator = ConstIterator<List>;
@@ -234,6 +235,7 @@ private:
     // m_tail->prev --> last
     // 多一个tail节点：1是为了end()返回迭代器时不用返回nullptr，方便迭代器操作
     // 2因为next要持有节点，所以不能做成闭环的链表，这样m_head就是失去头节点作用，资源也无法释放
+    // 3为了支持end()-1这样的操作
     std::unique_ptr<node_type>* m_tail = nullptr;
     // m_stage是一个tail节点的暂存区
     std::unique_ptr<node_type> m_stage;
@@ -249,7 +251,8 @@ public:
 
     // constructs the list
     constexpr List(List const& lst) :List() {
-        printf("List 被拷贝！\n");
+        if constexpr (log_level)
+            printf("List 被拷贝！\n");
         // head = lst.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
         assign(lst.begin(), lst.end());
@@ -730,6 +733,7 @@ private:
 
         return iterator(nraw);
     }
-};
+
+}; // class List
 
 } // namespace parallel101

@@ -10,11 +10,16 @@
 #endif
 #endif
 
+#include <chrono>
+#include <cmath>
+#include <functional>
+#include <iostream>
 #include <list>
+
 #include "List.h"
 
-template<class E>
-void print(parallel101::List<E> const& lst) {  // 有什么值得改进的？
+template<class E, int32_t log>
+void print(parallel101::List<E, log> const& lst) {  // 有什么值得改进的？
     // print并不修改lst，也不需要复制lst，所以需要添加const& 修饰符
     printf("[");
     //for (auto curr = lst.front(); curr; curr = curr->next.get()) {
@@ -25,8 +30,9 @@ void print(parallel101::List<E> const& lst) {  // 有什么值得改进的？
     printf(" ]\n");
 }
 
-void runcase();
-void runcase1();
+void runcase_exam();
+void runcase_morefunc();
+void runcase_profile();
 
 int main() {
 #ifdef WIN32
@@ -36,10 +42,9 @@ int main() {
 #endif
 #endif
 
-    runcase();
-    if (0) {
-        runcase1();
-    }
+    if (0) runcase_exam();
+    if (0) runcase_morefunc();
+    if (1) runcase_profile();
 
 #ifdef WIN32
 #ifdef _DEBUG
@@ -49,9 +54,9 @@ int main() {
     return 0;
 }
 
-void runcase() {
+void runcase_exam() {
     using namespace parallel101;
-    using List = List<int>;
+    using List = List<int, 1>;
 
     List a;
 
@@ -82,9 +87,9 @@ void runcase() {
     a = {};
 }
 
-void runcase1() {
+void runcase_morefunc() {
     using namespace parallel101;
-    using List = List<int>;
+    using List = List<int, 1>;
 
     List a;
     List b;
@@ -226,4 +231,45 @@ void runcase1() {
     b.push_back(std::move(12));
     b.push_front(std::move(13));
     print(b);   // [ 13 9 10 3 2 1 12 ]
+}
+
+void runcase_profile() {
+    auto fl = [](int32_t n) {
+        std::list<int32_t> li;
+        while (n--) li.push_back(n);
+    };
+    auto fo = [](int32_t n) {
+        parallel101::List<int32_t, 0> li;
+        while (n--) li.push_back(n);
+    };
+
+    auto profile = [](std::function<void(int32_t)> fx, int32_t n) {
+        auto t0 = std::chrono::high_resolution_clock::now();
+        fx(n);
+        auto t1 = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
+        return duration;
+    };
+
+    /*
+    archlinux / gcc version 11.1.0 (GCC) / -O2 optimization / Sample output
+        N       std::list       101:List
+        10      1               0
+        100     2               2
+        1000    28              15
+        10000   277             156
+        100000  2798            1882
+        1e+06   29997           18251
+        1e+07   301440          174546
+        1e+08   3272047         1761303
+    */
+    std::cout << "N\t" << "std::list\t" << "101:List" << std::endl;
+    auto count = 8;
+    for (auto n = 1; n < count; ++n) {
+        auto times = std::pow(10, n);
+        std::cout << times << '\t';
+        std::cout << profile(fl, times) << "\t\t";
+        std::cout << profile(fo, times) << std::endl;
+    }
+    std::cout << std::flush;
 }
