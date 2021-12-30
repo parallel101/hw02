@@ -210,7 +210,7 @@ public:
     }
 };
 
-template<class E, int32_t log_level>
+template<class E, int32_t log_level = 0>
 class List {
 public:
     using value_type = E;

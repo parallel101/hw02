@@ -18,8 +18,8 @@
 
 #include "List.h"
 
-template<class E, int32_t log>
-void print(parallel101::List<E, log> const& lst) {  // 有什么值得改进的？
+template<class E, int32_t log_level>
+void print(parallel101::List<E, log_level> const& lst) {  // 有什么值得改进的？
     // print并不修改lst，也不需要复制lst，所以需要添加const& 修饰符
     printf("[");
     //for (auto curr = lst.front(); curr; curr = curr->next.get()) {
@@ -239,7 +239,7 @@ void runcase_profile() {
         while (n--) li.push_back(n);
     };
     auto fo = [](int32_t n) {
-        parallel101::List<int32_t, 0> li;
+        parallel101::List<int32_t> li;
         while (n--) li.push_back(n);
     };
 
@@ -253,7 +253,7 @@ void runcase_profile() {
 
     /*
     archlinux / gcc version 11.1.0 (GCC) / -O2 optimization / Sample output
-        N       std::list       101:List
+        N       std::list       101::List
         10      1               0
         100     2               2
         1000    28              15
@@ -263,13 +263,13 @@ void runcase_profile() {
         1e+07   301440          174546
         1e+08   3272047         1761303
     */
-    std::cout << "N\t" << "std::list\t" << "101:List" << std::endl;
+    std::cout << "N\t" << "std::list\t" << "101::List" << std::endl;
     auto count = 8;
     for (auto n = 1; n < count; ++n) {
         auto times = std::pow(10, n);
-        std::cout << times << '\t';
-        std::cout << profile(fl, times) << "\t\t";
-        std::cout << profile(fo, times) << std::endl;
+        std::cout << times << '\t'; // float scientific notation
+        std::cout << profile(fl, static_cast<int32_t>(times)) << "\t\t";
+        std::cout << profile(fo, static_cast<int32_t>(times)) << std::endl;
     }
     std::cout << std::flush;
 }
