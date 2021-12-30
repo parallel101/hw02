@@ -234,15 +234,6 @@ void runcase_morefunc() {
 }
 
 void runcase_profile() {
-    auto fl = [](int32_t n) {
-        std::list<int32_t> li;
-        while (n--) li.push_back(n);
-    };
-    auto fo = [](int32_t n) {
-        parallel101::List<int32_t> li;
-        while (n--) li.push_back(n);
-    };
-
     auto profile = [](std::function<void(int32_t)> fx, int32_t n) {
         auto t0 = std::chrono::high_resolution_clock::now();
         fx(n);
@@ -251,8 +242,17 @@ void runcase_profile() {
         return duration;
     };
 
-    /*
-    archlinux / gcc version 11.1.0 (GCC) / -O2 optimization / Sample output
+    auto fstd = [](int32_t n) {
+        std::list<int32_t> li;
+        while (n--) li.push_back(n);
+    };
+    auto f101 = [](int32_t n) {
+        parallel101::List<int32_t> li;
+        while (n--) li.push_back(n);
+    };
+
+    /* Sample output
+    archlinux / gcc version 11.1.0 (GCC) / -O2 optimization
         N       std::list       101::List
         10      1               0
         100     2               2
@@ -268,8 +268,8 @@ void runcase_profile() {
     for (auto n = 1; n < count; ++n) {
         auto times = std::pow(10, n);
         std::cout << times << '\t'; // float scientific notation
-        std::cout << profile(fl, static_cast<int32_t>(times)) << "\t\t";
-        std::cout << profile(fo, static_cast<int32_t>(times)) << std::endl;
+        std::cout << profile(fstd, static_cast<int32_t>(times)) << "\t\t";
+        std::cout << profile(f101, static_cast<int32_t>(times)) << std::endl;
     }
     std::cout << std::flush;
 }
