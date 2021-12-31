@@ -245,10 +245,14 @@ void runcase_profile() {
     auto fstd = [](int32_t n) {
         std::list<int32_t> li;
         while (n--) li.push_back(n);
+        std::list<int32_t> l2;
+        l2.swap(li);
     };
     auto f101 = [](int32_t n) {
         parallel101::List<int32_t> li;
         while (n--) li.push_back(n);
+        parallel101::List<int32_t> l2;
+        l2.swap(li);
     };
 
     /* Sample output

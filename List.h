@@ -610,6 +610,8 @@ public:
 
     ///////// Modifiers
     // swaps the contents
+    // 因为只需要swap unique_ptr/unique_ptr*/size_t这三个类型，且三个的swap都是不会抛出异常的
+    // 所以在swap定义直接使用了noexcept而不是再做except类型判断，异常安全在限定类型的情景下是加强的
     void swap(List& lst) noexcept {
         std::swap(m_head, lst.m_head);
         std::swap(m_stage, lst.m_stage);
