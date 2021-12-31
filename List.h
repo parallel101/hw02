@@ -526,7 +526,7 @@ public:
     // returns an iterator pointing to the inserted value
     // [pos->prev] [node] [pos]
     iterator insert_before(const_iterator pos, value_type&& x) {
-        auto node = std::move(_make_node(std::move(x)));
+        auto node = _make_node(std::move(x));
         return _insert_before(pos, node);
     }
 
@@ -581,7 +581,7 @@ public:
     // returns an iterator pointing to the constructed value
     template<class... Args>
     iterator emplace_before(const_iterator pos, Args&&... args) {
-        auto node = std::move(_make_node(std::forward<Args>(args)...));
+        auto node = _make_node(std::forward<Args>(args)...);
         return _insert_before(pos, node);
     }
 
@@ -700,8 +700,8 @@ private:
 
     // init essential control member
     constexpr void _init() noexcept {
-        m_head = std::move(_make_node());
-        m_stage = std::move(_make_node());
+        m_head = _make_node();
+        m_stage = _make_node();
         m_stage->prev = m_head.get();
         m_head->next = std::move(m_stage);
         m_tail = std::addressof(m_head->next);
