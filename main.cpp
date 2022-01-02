@@ -53,6 +53,7 @@ struct List {
         while(thead->next)
         {
             head->next=std::make_shared<Node>(thead->next->value);
+            head->next->prev=head;
             head=head->next;
             thead=thead->next;
         }
