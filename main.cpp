@@ -11,8 +11,7 @@ struct Node {
     int value;
 
     // 这个构造函数有什么可以改进的？
-    Node(int val) {
-        value = val;
+    Node(int val) : value(val) {
     }
 
     void insert(int val) {
