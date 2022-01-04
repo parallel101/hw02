@@ -1,6 +1,7 @@
 /* 基于智能指针实现双向链表 */
 #include <cstdio>
 #include <memory>
+#include <vector>
 
 struct Node {
     // 这两个指针会造成什么问题？请修复
@@ -11,9 +12,8 @@ struct Node {
     int value;
 
     // 这个构造函数有什么可以改进的？
-    Node(int val) {
-        value = val;
-    }
+    // 直接利用初始化列表，避免初始化两次
+    Node(int val): value(val) {}
 
     void insert(int val) {
         auto node = std::make_shared<Node>(val);
@@ -44,8 +44,15 @@ struct List {
 
     List(List const &other) {
         printf("List 被拷贝！\n");
-        head = other.head;  // 这是浅拷贝！
+        // head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
+        std::vector<int> lst;
+        for (auto curr = other.front(); curr; curr = curr->next.get()) {
+            lst.emplace_back(curr->value);
+        }
+        for (auto curr = lst.rbegin(); curr != lst.rend(); ++curr) {
+            this->push_front(*curr);
+        }
     }
 
     List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
@@ -80,7 +87,7 @@ struct List {
     }
 };
 
-void print(List lst) {  // 有什么值得改进的？
+void print(List const& lst) {  // 有什么值得改进的？ -> 常引用，减少拷贝
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
