@@ -118,6 +118,8 @@ int main() {
 
     print(a);   // [ 1 4 2 5 7 ]
     print(b);   // [ 1 4 2 8 5 7 ]
+    a.at(4)->insert(6);
+    print(a);   // [ 1 4 2 5 6 7]
 
     b = {};
     a = {};
