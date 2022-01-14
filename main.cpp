@@ -53,15 +53,15 @@ struct List {
         printf("List 被拷贝！\n");
         // head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
+        // 先创建头指针
         head = std::make_unique<Node>(other.front()->value);
          // 这里要获取原始指针,unique_ptr不支持拷贝赋值,不便迭代
          // 否则将只能在head后面插入, 破坏顺序
         auto n_head = head.get();  
 
-        for (auto curr = other.front()->next.get(); curr; curr = curr->next.get()) {
+        for (auto curr = other.front()->next.get(); curr;
+        curr = curr->next.get(),n_head = n_head->next.get())
             n_head->insert(curr->value);
-            n_head = n_head->next.get();
-        }
         
     }
 
