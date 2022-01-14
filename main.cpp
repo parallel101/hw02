@@ -4,30 +4,37 @@
 
 struct Node {
     // 这两个指针会造成什么问题？请修复
-    std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
+    // 会造成循环引用, 在删除一个Node后,由于仍有Node指向该对象,因此资源不会被释放
+    // std::unique_ptr<Node> next;
+    // Node* prev;
     // 如果能改成 unique_ptr 就更好了!
+    std::unique_ptr<Node> next;
+    Node* prev;
 
     int value;
 
     // 这个构造函数有什么可以改进的？
-    Node(int val) {
-        value = val;
+    explicit Node(int val) : value(val)
+    {}
+
+    // 保证有一个结点前提,向当前结点后插入一个新结点
+    void insert(int val) {
+        // 此处node为暂时的指针,真正的资源由this.next管理
+        auto node = std::make_unique<Node>(val);  
+        node->next = std::move(next);   // this.next为空
+        // node->next=原始的this.next两个都不为空
+        if (node->next) {
+            // 利用原始的this.next获取prev=this, 必不为空
+            node->prev = node->next->prev; 
+            node->next->prev = node.get();  // 需要原始指针
+        }
+        next = std::move(node);  // 移交所属权给this.next
     }
 
-    void insert(int val) {
-        auto node = std::make_shared<Node>(val);
-        node->next = next;
-        node->prev = prev;
-        if (prev)
-            prev->next = node;
-        if (next)
-            next->prev = node;
-    }
 
     void erase() {
         if (prev)
-            prev->next = next;
+            prev->next = std::move(next);
         if (next)
             next->prev = prev;
     }
@@ -38,14 +45,24 @@ struct Node {
 };
 
 struct List {
-    std::shared_ptr<Node> head;
+    std::unique_ptr<Node> head;
 
     List() = default;
 
     List(List const &other) {
         printf("List 被拷贝！\n");
-        head = other.head;  // 这是浅拷贝！
+        // head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
+        // 先创建头指针
+        head = std::make_unique<Node>(other.front()->value);
+         // 这里要获取原始指针,unique_ptr不支持拷贝赋值,不便迭代
+         // 否则将只能在head后面插入, 破坏顺序
+        auto n_head = head.get();  
+
+        for (auto curr = other.front()->next.get(); curr;
+        curr = curr->next.get(), n_head = n_head->next.get())
+            n_head->insert(curr->value);
+        
     }
 
     List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
@@ -59,16 +76,17 @@ struct List {
 
     int pop_front() {
         int ret = head->value;
-        head = head->next;
+        head = std::move(head->next);
         return ret;
     }
 
+    // 这里与insert类似,只不过不用考虑node->prev(因为他是新的头指针)
     void push_front(int value) {
-        auto node = std::make_shared<Node>(value);
-        node->next = head;
-        if (head)
-            head->prev = node;
-        head = node;
+        auto node = std::make_unique<Node>(value);
+        node->next = std::move(head); // node->next指向原来head指向的对象, head清空
+        if (node->next)
+            node->next->prev = node.get();
+        head = std::move(node);  // 移交给head
     }
 
     Node *at(size_t index) const {
@@ -80,7 +98,7 @@ struct List {
     }
 };
 
-void print(List lst) {  // 有什么值得改进的？
+void print(List const &lst) {  // 有什么值得改进的？
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
