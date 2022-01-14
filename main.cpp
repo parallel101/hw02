@@ -73,12 +73,12 @@ struct List {
 		//循环终止条件是当next为nullptr
 		while (temp_curr_ptr->next != nullptr)
 		{
-			//构造新的next节点temp_shared_ptr
-			std::unique_ptr<Node> temp_shared_ptr = std::make_unique<Node>(temp_curr_ptr->next->value);	
+			//构造新的next节点curr_next_ptr
+			std::unique_ptr<Node> curr_next_ptr = std::make_unique<Node>(temp_curr_ptr->next->value);	
 			//temp_shared_ptr的prev指向上一个节点
-			temp_shared_ptr->prev = prev_ptr;
+			curr_next_ptr->prev = prev_ptr;
 			//让上一个节点的next节点指向temp_shared_ptr
-			prev_ptr->next = std::move(temp_shared_ptr);
+			prev_ptr->next = std::move(curr_next_ptr);
 			//在进入下一次循环时更新临时指向：
 			//让上一节点指向temp_shared_ptr
 			prev_ptr = prev_ptr->next.get();
