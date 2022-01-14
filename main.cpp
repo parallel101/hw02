@@ -60,7 +60,7 @@ struct List {
         auto n_head = head.get();  
 
         for (auto curr = other.front()->next.get(); curr;
-        curr = curr->next.get(),n_head = n_head->next.get())
+        curr = curr->next.get(), n_head = n_head->next.get())
             n_head->insert(curr->value);
         
     }
