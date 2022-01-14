@@ -51,7 +51,7 @@ struct Node {
 	}
 
     ~Node() {
-        printf("~Node()\n");   // 应输出多少次？为什么少了？ // 答:应该输出7次(List的push次数)，shared_ptr的计数未归为零导致内存未释放
+        printf("~Node()\n");   // 应输出多少次？为什么少了？ // 答:应该输出7次(List a的析构次数) + 6(List b的析构次数)，shared_ptr的计数未归为零导致内存未释放
     }
 };
 
@@ -88,7 +88,7 @@ struct List {
 		//完成深拷贝        
     }
 
-    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？答:因为List b = a调用了拷贝构造，而不是拷贝赋值，如果分开写List b;b =a;将报错。
+    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？答:因为默认移动赋值函数的存在，List b = a调用了拷贝构造函数构造临时的a备份，再转交生命周期给b。
 
     List(List &&) = default;
     List &operator=(List &&) = default;
