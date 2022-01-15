@@ -70,7 +70,16 @@ struct List {
         }
     }
 
-    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
+    // List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
+    // 删除不出错是因为，临时变量是右值，a = {}, b = {} 调用是移动赋值。
+    // 如果非要写赋值，可以改换成这个。
+    List &operator=(const List &other)
+    {
+        head = {};
+        this->~List();
+        new(this) List{other};
+        return *this;
+    }
 
     // 转移头的控制权
     List(List &&) = default;
@@ -128,7 +137,10 @@ int main() {
 
     print(a);   // [ 1 4 2 8 5 7 ]
 
-    List b = a;
+
+//  List b = a;
+    List b;
+    b = a;
 
     a.at(3)->erase();
 
