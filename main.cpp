@@ -4,11 +4,12 @@
 
 struct Node {
     // 这两个指针会造成什么问题？请修复
-    std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
+    // 两个指针都使用shared_ptr的话，在相邻的节点之间会有循环引用，导致内存泄漏
+    // std::shared_ptr<Node> next;
+    // std::shared_ptr<Node> prev;
     // 如果能改成 unique_ptr 就更好了!
-    // std::unique_ptr<Node> next;
-    // std::unique_ptr<Node> prev;
+    std::unique_ptr<Node> next;
+    Node* prev;
 
     int value;
 
@@ -20,20 +21,24 @@ struct Node {
         : value(val), next(nullptr), prev(nullptr) {}
 
     void insert(int val) {
-        auto node = std::make_shared<Node>(val);
-        node->next = next;
-        node->prev = prev;
-        if (prev)
-            prev->next = node;
-        if (next)
-            next->prev = node;
+        auto node = std::make_unique<Node>(val);
+        node->next = std::move(next);
+
+        if (node->next) {
+            node->prev = node->next->prev;
+            node->next->prev = node.get();
+        }
+        next = std::move(node);
     }
 
     void erase() {
+        // printf("erase(): %d\n", value);
+        // if (prev)
+        //     prev->next = std::move(next);
+        if (next)
+            next->prev = prev;
         if (prev)
             prev->next = std::move(next);
-        if (next)
-            next->prev = std::move(prev);
     }
 
     ~Node() {
@@ -42,7 +47,7 @@ struct Node {
 };
 
 struct List {
-    std::shared_ptr<Node> head;
+    std::unique_ptr<Node> head;
 
     List() = default;
 
@@ -54,19 +59,23 @@ struct List {
         // head = other.head;
 
         // 请实现拷贝构造函数为 **深拷贝**
-        std::shared_ptr<Node> rear;
-        for (auto p = other.head; p != nullptr; p = p->next) {
-            // printf("create node: %d\n", p->value);
-            std::shared_ptr<Node> new_node(new Node(p->value));
-            if (p == other.head) {
-                head = new_node;
-                rear = head;
-            } else {
-                rear->next = new_node;
-                new_node->prev = rear;
-                rear = new_node;
-            }
+        head.reset();
+        if (!other.front())
+            return;
+
+        std::unique_ptr<Node> new_head = std::make_unique<Node>(other.front()->value);
+        Node* raw = other.front();
+        Node* rear = new_head.get();
+        while (raw->next) {
+            raw = raw->next.get();
+            auto new_node = std::make_unique<Node>(raw->value);
+            new_node->prev = rear;
+            rear->next = std::move(new_node);
+
+            // cannot use "rear = new_node.get()" here, since new_node is unique and it is moved
+            rear = rear->next.get();
         }
+        head = std::move(new_head);
     }
 
     List& operator=(List const&) = delete;  // 为什么删除拷贝赋值函数也不出错？
@@ -80,16 +89,17 @@ struct List {
 
     int pop_front() {
         int ret = head->value;
-        head = head->next;
+        head = std::move(head->next);
         return ret;
     }
 
     void push_front(int value) {
-        auto node = std::make_shared<Node>(value);
-        node->next = head;
-        if (head)
-            head->prev = node;
-        head = node;
+        auto node = std::make_unique<Node>(value);
+        node->next = std::move(head);
+        if (node->next) {
+            node->next->prev = node.get();
+        }
+        head = std::move(node);
     }
 
     Node* at(size_t index) const {
