@@ -4,13 +4,15 @@
 
 struct Node {
     // 这两个指针会造成什么问题？请修复
+    // 造成循环引用，把其中一个改为weak_ptr可以解决
     std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
-    // 如果能改成 unique_ptr 就更好了!
+    std::weak_ptr<Node> prev;
+    // 如果能改成 unique_ptr 就更好了!  不会，看了其他同学的答案
 
     int value;
 
     // 这个构造函数有什么可以改进的？
+    // 不知道
     Node(int val) {
         value = val;
     }
@@ -19,15 +21,15 @@ struct Node {
         auto node = std::make_shared<Node>(val);
         node->next = next;
         node->prev = prev;
-        if (prev)
-            prev->next = node;
+        if (prev.expired())
+            prev.lock()->next = node;
         if (next)
             next->prev = node;
     }
 
     void erase() {
-        if (prev)
-            prev->next = next;
+        if (prev.expired())
+            prev.lock()->next = next;
         if (next)
             next->prev = prev;
     }
