@@ -12,9 +12,7 @@ struct Node {
     int value;
 
     // 这个构造函数有什么可以改进的？
-    // 不知道
-    Node(int val) {
-        value = val;
+    Node(int val) : value(val) {
     }
 
     void insert(int val) {
@@ -28,7 +26,7 @@ struct Node {
     }
 
     void erase() {
-        if (prev.expired())
+        if (!prev.expired())
             prev.lock()->next = next;
         if (next)
             next->prev = prev;
@@ -46,11 +44,22 @@ struct List {
 
     List(List const &other) {
         printf("List 被拷贝！\n");
-        head = other.head;  // 这是浅拷贝！
+        //head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
+        auto o = other.head;
+        auto p = std::make_shared<Node>(o->value);
+        auto prev = p;
+        head = p;
+        while (o->next) {
+            o = o->next;
+            p->next = std::make_shared<Node>(o->value);
+            p->prev = prev;
+            prev = p;
+            p = p->next;
+        }
     }
 
-    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
+    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？ 看了其他人的答案，如果把拷贝赋值删了，就会自动使用移动赋值
 
     List(List &&) = default;
     List &operator=(List &&) = default;
@@ -82,7 +91,7 @@ struct List {
     }
 };
 
-void print(List lst) {  // 有什么值得改进的？
+void print(List const& lst) {  // 有什么值得改进的？ 改成引用传值
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
