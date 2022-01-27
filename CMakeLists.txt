@@ -6,4 +6,5 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
 endif()
 
+add_definitions(-DUSE_SHARED_PTR)
 add_executable(main main.cpp)
