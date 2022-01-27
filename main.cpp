@@ -7,7 +7,7 @@ struct Node {
     // 造成循环引用，把其中一个改为weak_ptr可以解决
     std::shared_ptr<Node> next;
     std::weak_ptr<Node> prev;
-    // 如果能改成 unique_ptr 就更好了!  不会，看了其他同学的答案
+    // 如果能改成 unique_ptr 就更好了!
 
     int value;
 
@@ -19,7 +19,7 @@ struct Node {
         auto node = std::make_shared<Node>(val);
         node->next = next;
         node->prev = prev;
-        if (prev.expired())
+        if (!prev.expired())
             prev.lock()->next = node;
         if (next)
             next->prev = node;
@@ -59,7 +59,7 @@ struct List {
         }
     }
 
-    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？ 看了其他人的答案，如果把拷贝赋值删了，就会自动使用移动赋值
+    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？ 如果把拷贝赋值删了，就会自动使用移动赋值
 
     List(List &&) = default;
     List &operator=(List &&) = default;
