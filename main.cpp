@@ -87,8 +87,8 @@ struct List {
         Node<T>* m_ptr;
     };
 
-    Node<T>* _dummyEnd = new Node<T>(0);
-    std::unique_ptr<Node<T>> head{_dummyEnd};
+    std::unique_ptr<Node<T>> head;
+    Node<T>* back = nullptr;
 
     List() = default;
 
@@ -115,6 +115,8 @@ struct List {
             throw std::out_of_range("pop_front()");
         }
         T ret = head->value;
+        if (head.get() == back)
+            back = nullptr;
         head = std::move(head->next);
         return ret;
     }
@@ -123,22 +125,21 @@ struct List {
         auto node = std::make_unique<Node<T>>(value);
         if (head)
             head->prev = node.get();
+        else
+            back = node.get();
         node->next = std::move(head);
         head = std::move(node);
     }
 
     void push_back(const T& value) {
-        auto prev = _dummyEnd->prev;
         auto node = std::make_unique<Node<T>>(value);
-        if (prev) {
-            node->next = std::move(prev->next);
-            node->next->prev = node.get();
-            node->prev = prev;
-            prev->next = std::move(node);
+        if (back) {
+            node->prev = back;
+            back->next = std::move(node);
+            back = back->next.get();
         } else {
-            head->prev = node.get();
-            node->next = std::move(head);
             head = std::move(node);
+            back = head.get();
         }
     }
 
@@ -151,7 +152,7 @@ struct List {
     }
 
     iterator begin() { return iterator(head.get()); }
-    iterator end() { return iterator(_dummyEnd); }
+    iterator end() { return iterator(nullptr); }
 };
 
 void print(List<int> &lst) {  // 有什么值得改进的？: 传入const引用，避免拷贝
@@ -189,5 +190,9 @@ int main() {
     b = {};
     a = {};
 
+    b.push_back(1);
+    b.push_back(2);
+    b.push_back(3);
+    print(b);   // [ 1 2 3 ]
     return 0;
 }
