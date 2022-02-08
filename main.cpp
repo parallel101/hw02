@@ -1,8 +1,12 @@
 /* 基于智能指针实现双向链表 */
 #include <cstdio>
+#include <exception>
 #include <memory>
+#include <stdexcept>
 #include <utility>
 #include <type_traits>
+#include <iterator>
+#include <cstddef>
 
 template <typename T>
 struct Node {
@@ -17,7 +21,9 @@ struct Node {
     T value;
 
     // 这个构造函数有什么可以改进的？:value直接根据val构造而不是默认构造后赋值。
-    Node(T val): value(val), prev(nullptr) {}
+    Node(const T& val): value(val), prev(nullptr) {}
+    Node(const Node&) = default;
+    Node& operator=(Node&&) = default;
 
     // insert会导致无法使用unique_ptr，因为会破环上面假设的“前一项拥有后一项”的前提
     /*
@@ -51,19 +57,45 @@ struct Node {
 
 template<typename T>
 struct List {
-    std::unique_ptr<Node<T>> head;
+
+    class iterator {
+    public:
+        using iterator_category = std::bidirectional_iterator_tag;
+        using difference_type   = std::ptrdiff_t;
+        using value_type        = Node<T>;
+        using pointer           = value_type*;  // or also value_type*
+        using reference         = value_type&;  // or also value_type&
+
+        iterator(pointer ptr): m_ptr(ptr) {}
+        reference operator*() { return *m_ptr; }
+        pointer operator->() { return m_ptr; }
+
+        // Prefix increment
+        iterator& operator++() 
+        { m_ptr = m_ptr->next.get(); return *this; }  
+
+        // Postfix increment
+        iterator operator++(int) 
+        { iterator tmp = *this; ++(*this); return tmp; }
+
+        friend bool operator== (const iterator& a, const iterator& b) 
+        { return a.m_ptr == b.m_ptr; };
+        friend bool operator!= (const iterator& a, const iterator& b) 
+        { return a.m_ptr != b.m_ptr; };     
+
+    private:
+        Node<T>* m_ptr;
+    };
+
+    Node<T>* _dummyEnd = new Node<T>(0);
+    std::unique_ptr<Node<T>> head{_dummyEnd};
 
     List() = default;
 
-    List(List const &other) {
+    List(List &other) {
         printf("List 被拷贝！\n");
-        head = std::make_unique<Node<T>>(other.head->value);
-        auto last = head.get();
-        for (auto ptr = other.head->next.get(); ptr; ptr = ptr->next.get()) {
-            auto node = std::make_unique<Node<T>>(ptr->value);
-            node->prev = last;
-            last->next = std::move(node);
-            last = last->next.get();
+        for (auto it = other.begin(); it != other.end(); it++) {
+            push_back(it->value);
         }
         // 请实现拷贝构造函数为 **深拷贝**
     }
@@ -78,18 +110,36 @@ struct List {
         return head.get();
     }
 
-    int pop_front() {
-        int ret = head->value;
+    T pop_front() {
+        if (begin() == end()) {
+            throw std::out_of_range("pop_front()");
+        }
+        T ret = head->value;
         head = std::move(head->next);
         return ret;
     }
 
-    void push_front(int value) {
+    void push_front(const T& value) {
         auto node = std::make_unique<Node<T>>(value);
         if (head)
             head->prev = node.get();
         node->next = std::move(head);
         head = std::move(node);
+    }
+
+    void push_back(const T& value) {
+        auto prev = _dummyEnd->prev;
+        auto node = std::make_unique<Node<T>>(value);
+        if (prev) {
+            node->next = std::move(prev->next);
+            node->next->prev = node.get();
+            node->prev = prev;
+            prev->next = std::move(node);
+        } else {
+            head->prev = node.get();
+            node->next = std::move(head);
+            head = std::move(node);
+        }
     }
 
     Node<T> *at(size_t index) const {
@@ -99,12 +149,15 @@ struct List {
         }
         return curr;
     }
+
+    iterator begin() { return iterator(head.get()); }
+    iterator end() { return iterator(_dummyEnd); }
 };
 
-void print(const List<int> &lst) {  // 有什么值得改进的？: 传入const引用，避免拷贝
+void print(List<int> &lst) {  // 有什么值得改进的？: 传入const引用，避免拷贝
     printf("[");
-    for (auto curr = lst.front(); curr; curr = curr->next.get()) {
-        printf(" %d", curr->value);
+    for (auto &v: lst) {
+        printf(" %d", v.value);
     }
     printf(" ]\n");
 }
