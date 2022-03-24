@@ -6,16 +6,14 @@ struct Node {
     /*  Q: 这两个指针会造成什么问题？
         A: 产生了环形引用，导致无法解构。 */
     std::unique_ptr<Node> next;
-    struct Node* prev;
+    struct Node* prev = nullptr;
     // 如果能改成 unique_ptr 就更好了!
 
     int value;
 
     /*  Q: 这个构造函数有什么可以改进的？
         A: 添加 explicit 避免隐式转换。 */
-    explicit Node(int val) {
-        value = val;
-    }
+    explicit Node(int val) : value(val) {}
 
     void insert(int val) {
         auto node = std::make_unique<Node>(val);
