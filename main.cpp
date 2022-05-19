@@ -1,7 +1,6 @@
 /* 基于智能指针实现双向链表 */
 #include <cstdio>
 #include <memory>
-
 struct Node {
     // 这两个指针会造成什么问题？请修复
     std::shared_ptr<Node> next;
@@ -10,9 +9,8 @@ struct Node {
 
     int value;
 
-    // 这个构造函数有什么可以改进的？
-    Node(int val) {
-        value = val;
+    // 这个构造函数有什么可以改进的？//使用初始化列表，不用等创建后再初始化赋值即可以在创建时赋值。
+    Node(int val):value(val) {
     }
 
     void insert(int val) {
@@ -33,7 +31,7 @@ struct Node {
     }
 
     ~Node() {
-        printf("~Node()\n");   // 应输出多少次？为什么少了？
+        printf("~Node(%d)\n",this->value);   // 应输出多少次？为什么少了？//prev清除了但next没有清除，智能指针引用没有清零，需要手动erase或者使用弱指针或uniptr
     }
 };
 
@@ -44,14 +42,42 @@ struct List {
 
     List(List const &other) {
         printf("List 被拷贝！\n");
-        head = other.head;  // 这是浅拷贝！
+        printf("拷贝构造函数\n");
+        //head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
+        std::shared_ptr<Node> currnode;//用于记录尾结点
+        for(auto curr = other.front(); curr; curr = curr->next.get())
+        {
+            auto node = std::make_shared<Node>(curr->value);
+            if(head)
+            {
+                node->prev = currnode;
+                currnode->next = node;
+            }
+            else
+            {   
+                head = node;
+            }
+            currnode = node;
+        }
     }
 
-    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
+    List &operator=(List const &other) = delete; // 为什么删除拷贝赋值函数也不出错？// 转而默认调用移动赋值函数。先创建一个即时对象，移动到目标对象上。
 
     List(List &&) = default;
-    List &operator=(List &&) = default;
+    List &operator=(List &&other)//移动赋值
+    {
+        printf("移动赋值函数\n"); 
+        printf("先解构原来的\n");;
+        for(auto curr = this->front(); curr; curr=curr->next.get())
+        {
+            curr->erase();
+        }
+        printf("再移动Head\n");
+        this->head = other.head;
+        other.head = nullptr;
+        return *this;
+    }
 
     Node *front() const {
         return head.get();
@@ -80,7 +106,7 @@ struct List {
     }
 };
 
-void print(List lst) {  // 有什么值得改进的？
+void print(const List& lst) {  // 有什么值得改进的？//使用常引用，减少拷贝构造
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
@@ -89,7 +115,7 @@ void print(List lst) {  // 有什么值得改进的？
 }
 
 int main() {
-    List a;
+    List a; //无参构造a
 
     a.push_front(7);
     a.push_front(5);
@@ -105,15 +131,15 @@ int main() {
 
     print(a);   // [ 1 4 2 8 5 7 ]
 
-    List b = a;
+    List b = a; //拷贝a构造b， 深拷贝
 
     a.at(3)->erase();
 
     print(a);   // [ 1 4 2 5 7 ]
     print(b);   // [ 1 4 2 8 5 7 ]
 
-    b = {};
-    a = {};
+    b = {};//默认构造一个{}， 移动赋值到b， b原来的元素应该被释放
+    a = {};//默认构造一个{}， 移动赋值到a， a原来的元素应该被释放
 
     return 0;
 }
