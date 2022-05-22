@@ -3,8 +3,10 @@
 #include <memory>
 struct Node {
     // 这两个指针会造成什么问题？请修复
-    std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
+    //std::shared_ptr<Node> next;
+    //std::shared_ptr<Node> prev;
+    std::unique_ptr<Node> next;
+    Node* prev;
     // 如果能改成 unique_ptr 就更好了!
 
     int value;
@@ -14,20 +16,22 @@ struct Node {
     }
 
     void insert(int val) {
-        auto node = std::make_shared<Node>(val);
-        node->next = next;
+        auto node = std::make_unique<Node>(val);
+        node->next = std::move(next);
         node->prev = prev;
         if (prev)
-            prev->next = node;
+            prev->next = std::move(node);
         if (next)
-            next->prev = node;
+            next->prev = node.get();
     }
 
     void erase() {
-        if (prev)
-            prev->next = next;
         if (next)
             next->prev = prev;
+        if (prev){
+            //prev->next = nullptr;//不能置为nullptr，否则链表当前节点之后的会全部解构。
+            prev->next = std::move(next);
+        }
     }
 
     ~Node() {
@@ -36,7 +40,9 @@ struct Node {
 };
 
 struct List {
-    std::shared_ptr<Node> head;
+    //std::shared_ptr<Node> head;
+    //Node* head{nullptr};
+    std::unique_ptr<Node> head;
 
     List() = default;
 
@@ -45,20 +51,22 @@ struct List {
         printf("拷贝构造函数\n");
         //head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
-        std::shared_ptr<Node> currnode;//用于记录尾结点
+        Node* tailnode;//用于记录尾结点
         for(auto curr = other.front(); curr; curr = curr->next.get())
         {
-            auto node = std::make_shared<Node>(curr->value);
+            auto node = std::make_unique<Node>(curr->value);
             if(head)
             {
-                node->prev = currnode;
-                currnode->next = node;
+                node->prev = tailnode;
+                tailnode->next = std::move(node);
+                tailnode = tailnode->next.get();
             }
             else
             {   
-                head = node;
+                head = std::move(node);
+                tailnode = head.get();
             }
-            currnode = node;
+            
         }
     }
 
@@ -74,7 +82,7 @@ struct List {
             curr->erase();
         }
         printf("再移动Head\n");
-        this->head = other.head;
+        this->head = std::move(other.head);
         other.head = nullptr;
         return *this;
     }
@@ -85,16 +93,24 @@ struct List {
 
     int pop_front() {
         int ret = head->value;
-        head = head->next;
+        head = std::move(head->next);
         return ret;
     }
 
     void push_front(int value) {
-        auto node = std::make_shared<Node>(value);
-        node->next = head;
+        auto node = std::make_unique<Node>(value);
         if (head)
-            head->prev = node;
-        head = node;
+        {
+            head->prev = node.get();
+            Node* tmp = head.get();
+            node->next = std::move(head);
+            head = std::move(node);
+        }
+        else
+        {
+            //node->next = std::move(head);
+            head = std::move(node);
+        }
     }
 
     Node *at(size_t index) const {
