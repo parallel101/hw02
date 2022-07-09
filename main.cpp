@@ -4,30 +4,27 @@
 
 struct Node {
     // 这两个指针会造成什么问题？请修复
-    std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
+    std::unique_ptr<Node> next;
+    Node* prev;
     // 如果能改成 unique_ptr 就更好了!
 
     int value;
 
     // 这个构造函数有什么可以改进的？
-    Node(int val) {
-        value = val;
-    }
+    Node(int val) : next(nullptr), prev(nullptr), value(val){ }
 
     void insert(int val) {
-        auto node = std::make_shared<Node>(val);
-        node->next = next;
-        node->prev = prev;
-        if (prev)
-            prev->next = node;
-        if (next)
-            next->prev = node;
+        auto node = std::unique_ptr<Node>(new Node(val));
+        node->next = std::move(next);
+        if (node->next)
+            node->next->prev = node.get();        
+        node->prev = this;
+        this->next = std::move(node);
     }
 
     void erase() {
         if (prev)
-            prev->next = next;
+            prev->next = std::move(next);
         if (next)
             next->prev = prev;
     }
@@ -38,14 +35,23 @@ struct Node {
 };
 
 struct List {
-    std::shared_ptr<Node> head;
+    std::unique_ptr<Node> head;
 
     List() = default;
 
     List(List const &other) {
         printf("List 被拷贝！\n");
-        head = other.head;  // 这是浅拷贝！
+        // head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
+        
+        head = std::unique_ptr<Node>(new Node(other.head->value));
+        
+        auto tmp = head.get();
+
+        for(auto it = other.head->next.get(); it ; it = it->next.get()){
+            tmp->insert(it->value);
+            tmp = tmp->next.get();
+        }
     }
 
     List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
@@ -59,16 +65,16 @@ struct List {
 
     int pop_front() {
         int ret = head->value;
-        head = head->next;
+        head = std::move(head->next);
         return ret;
     }
 
     void push_front(int value) {
-        auto node = std::make_shared<Node>(value);
-        node->next = head;
-        if (head)
-            head->prev = node;
-        head = node;
+        auto node = std::unique_ptr<Node>(new Node(value));
+        node->next = std::move(head);
+        if (node->next)
+            node->next->prev = node.get();
+        head = std::move(node);
     }
 
     Node *at(size_t index) const {
@@ -80,7 +86,7 @@ struct List {
     }
 };
 
-void print(List lst) {  // 有什么值得改进的？
+void print(const List& lst) {  // 有什么值得改进的？
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
