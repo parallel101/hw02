@@ -1,7 +1,7 @@
 /* 基于智能指针实现双向链表 */
 #include <cstdio>
 #include <memory>
-#include <iostream>
+
 struct Node {
     // 这两个指针会造成什么问题？请修复
     // std::shared_ptr<Node> next;
