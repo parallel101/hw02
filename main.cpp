@@ -4,15 +4,16 @@
 
 struct Node {
     // 这两个指针会造成什么问题？请修复
-    std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
+    // 会造成循环指针，导致俩个指针都没办法释放，同时课上老师说，智能指针会带来一定的性能损耗。
+    std::unique_ptr<Node> next;
+    Node* prev;
     // 如果能改成 unique_ptr 就更好了!
 
     int value;
 
     // 这个构造函数有什么可以改进的？
-    Node(int val) {
-        value = val;
+    // 可以用初始化表达式，同时利用常引用，可以避免不必要的拷贝
+    Node(int const &val):value(val),prev(nullptr) {
     }
 
     void insert(int val) {
@@ -34,6 +35,7 @@ struct Node {
 
     ~Node() {
         printf("~Node()\n");   // 应输出多少次？为什么少了？
+                               // 不会。。但根据老师课上的知识，猜测应该是循环指针，父节点被释放了，导致所属的子节点也被释放
     }
 };
 
@@ -42,13 +44,14 @@ struct List {
 
     List() = default;
 
-    List(List const &other) {
+    List(List const &other):head(other.head) {//不会。。
         printf("List 被拷贝！\n");
-        head = other.head;  // 这是浅拷贝！
+        //head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
     }
 
     List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
+                                             //因为类实现了默认移动赋值函数，编译器会尝试调用拷贝构造函数，这相当于直接构造对象，触发了移动语义，从而进一步调用移动赋值函数
 
     List(List &&) = default;
     List &operator=(List &&) = default;
@@ -81,6 +84,7 @@ struct List {
 };
 
 void print(List lst) {  // 有什么值得改进的？
+                        // 不会。。
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
