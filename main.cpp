@@ -1,6 +1,7 @@
 /* 基于智能指针实现双向链表 */
 #include <iostream>
 #include <memory>
+#include <initializer_list>
 
 template <typename Tp> struct Node {
     std::unique_ptr<Node> next;
@@ -17,18 +18,17 @@ template <typename Tp> struct Node {
     }
 };
 
-template <typename Tp> struct List {
+template <typename Tp, typename Init = std::initializer_list<Tp>> struct List {
     std::unique_ptr<Node<Tp>> head;
 
     List() = default;
-    List(List const &other) {
-        std::clog << "List 被拷贝！\n";
-        // 请实现拷贝构造函数为 **深拷贝**
-        if (other.head == nullptr) return;  // 空链表
-        Node<Tp> *it = other.front(), *tail;
-        head = std::make_unique<Node<Tp>>(it->value);
-        for (it = it->next.get(), tail = head.get(); it; it = it->next.get()) {
-          tail->next = std::make_unique<Node<Tp>>(it->value);
+    List(Init const &range) {
+        if (range.begin() == range.end()) return; 
+        Node<Tp> *tail;
+        auto it = range.begin();
+        head = std::make_unique<Node<Tp>>(*it);
+        for (++it, tail = head.get(); it != range.end(); ++it) {
+          tail->next = std::make_unique<Node<Tp>>(*it);
           tail->next->prev = tail;
           tail = tail->next.get();
         } 
@@ -75,8 +75,8 @@ template <typename Tp> struct List {
     }
 };
 
-template <typename Tp>
-std::ostream &operator<<(std::ostream &os, List<Tp> const &l) {
+template <typename Tp, typename Init>
+std::ostream &operator<<(std::ostream &os, List<Tp, Init> const &l) {
   for (os << '['; Tp x : l) os << x << ", ";
   os << (l.empty() ? "]" : "\b\b]");
   return os;
@@ -84,18 +84,11 @@ std::ostream &operator<<(std::ostream &os, List<Tp> const &l) {
 
 int main() {
 #define print(l) std::cout << l << '\n';
-    List<int> a;
-    a.push_front(7);
-    a.push_front(5);
-    a.push_front(8);
-    a.push_front(2);
-    a.push_front(9);
-    a.push_front(4);
-    a.push_front(1);
+    List<int> a = {1, 4, 9, 2, 8, 5, 7};
     print(a);   // [ 1 4 9 2 8 5 7 ]
     a.at(2)->erase();
     print(a);   // [ 1 4 2 8 5 7 ]
-    List<int> b = a;
+    List<int, List<int>> b = a;
     a.at(3)->erase();
     print(a);   // [ 1 4 2 5 7 ]
     print(b);   // [ 1 4 2 8 5 7 ]
