@@ -2,18 +2,18 @@
 #include <cstdio>
 #include <memory>
 
-struct Node {
+template <typename Tp> struct Node {
     // 这两个指针会造成什么问题？请修复。
     std::unique_ptr<Node> next;
     Node *prev;
     // 如果能改成 unique_ptr 就更好了!
 
-    int value;
+    Tp value;
 
     // 这个构造函数有什么可以改进的？
-    Node(int val): value(val) {}
+    Node(Tp val): value(val) {}
 
-    void insert(int val) {
+    void insert(Tp val) {
         value = val;
     }
 
@@ -27,8 +27,8 @@ struct Node {
     }
 };
 
-struct List {
-    std::unique_ptr<Node> head;
+template <typename Tp> struct List {
+    std::unique_ptr<Node<Tp>> head;
 
     List() = default;
 
@@ -36,10 +36,10 @@ struct List {
         printf("List 被拷贝！\n");
         // 请实现拷贝构造函数为 **深拷贝**
         if (other.head == nullptr) return;  // 空链表
-        Node *it = other.front(), *tail;
-        head = std::make_unique<Node>(it->value);
+        Node<Tp> *it = other.front(), *tail;
+        head = std::make_unique<Node<Tp>>(it->value);
         for (it = it->next.get(), tail = head.get(); it; it = it->next.get()) {
-          tail->next = std::make_unique<Node>(it->value);
+          tail->next = std::make_unique<Node<Tp>>(it->value);
           tail->next->prev = tail;
           tail = tail->next.get();
         } 
@@ -51,7 +51,7 @@ struct List {
     List(List &&) = default;
     List &operator=(List &&) = default;
 
-    Node *front() const {
+    Node<Tp> *front() const {
         return head.get();
     }
 
@@ -63,14 +63,14 @@ struct List {
     }
 
     void push_front(int value) {
-        auto node = new Node(value);
+        auto node = new Node<Tp>(value);
         if (head)
             head->prev = node;
         node->next = std::move(head);
-        head = std::unique_ptr<Node>(node);
+        head = std::unique_ptr<Node<Tp>>(node);
     }
 
-    Node *at(size_t index) const {
+    Node<Tp> *at(size_t index) const {
         auto curr = front();
         for (size_t i = 0; i < index; i++) {
             curr = curr->next.get();
@@ -79,14 +79,14 @@ struct List {
     }
 };
 
-void print(List const &lst) {  // 有什么值得改进的？
+template <typename Tp> void print(List<Tp> const &lst) {  // 有什么值得改进的？
     for (auto curr = lst.front(); curr; curr = curr->next.get()) 
-        printf("this: %p prev: %p next: %p value: %d\n",
+        printf("this: %p prev: %p next: %p value: %lf\n",
             curr, curr->prev, curr->next.get(), curr->value);
 }
 
 int main() {
-    List a;
+    List<int> a;
 
     a.push_front(7);
     a.push_front(5);
@@ -102,7 +102,7 @@ int main() {
 
     print(a);   // [ 1 4 2 8 5 7 ]
 
-    List b = a;
+    List<int> b = a;
 
     a.at(3)->erase();
 
