@@ -3,33 +3,23 @@
 #include <memory>
 
 struct Node {
-    // 这两个指针会造成什么问题？请修复
-    std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
+    // 这两个指针会造成什么问题？请修复。
+    std::unique_ptr<Node> next;
+    Node *prev;
     // 如果能改成 unique_ptr 就更好了!
 
     int value;
 
     // 这个构造函数有什么可以改进的？
-    Node(int val) {
+    Node(int val): value(val) {}
+
+    void insert(int val) {
         value = val;
     }
 
-    void insert(int val) {
-        auto node = std::make_shared<Node>(val);
-        node->next = next;
-        node->prev = prev;
-        if (prev)
-            prev->next = node;
-        if (next)
-            next->prev = node;
-    }
-
     void erase() {
-        if (prev)
-            prev->next = next;
-        if (next)
-            next->prev = prev;
+        if (next) next->prev = prev;
+        if (prev) prev->next = std::move(next);
     }
 
     ~Node() {
@@ -38,17 +28,25 @@ struct Node {
 };
 
 struct List {
-    std::shared_ptr<Node> head;
+    std::unique_ptr<Node> head;
 
     List() = default;
 
     List(List const &other) {
         printf("List 被拷贝！\n");
-        head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
+        if (other.head == nullptr) return;  // 空链表
+        Node *it = other.front(), *tail;
+        head = std::make_unique<Node>(it->value);
+        for (it = it->next.get(), tail = head.get(); it; it = it->next.get()) {
+          tail->next = std::make_unique<Node>(it->value);
+          tail->next->prev = tail;
+          tail = tail->next.get();
+        } 
     }
 
-    List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
+    List &operator=(List const &) = delete; // 为什么删除拷贝赋值函数也不出错？
+    // 因为编译器会用“解构函数+拷贝构造”代替拷贝赋值。
 
     List(List &&) = default;
     List &operator=(List &&) = default;
@@ -58,17 +56,18 @@ struct List {
     }
 
     int pop_front() {
+        if (head == nullptr) return 0x114154;
         int ret = head->value;
-        head = head->next;
+        head = std::move(head->next);
         return ret;
     }
 
     void push_front(int value) {
-        auto node = std::make_shared<Node>(value);
-        node->next = head;
+        auto node = new Node(value);
         if (head)
             head->prev = node;
-        head = node;
+        node->next = std::move(head);
+        head = std::unique_ptr<Node>(node);
     }
 
     Node *at(size_t index) const {
@@ -80,12 +79,10 @@ struct List {
     }
 };
 
-void print(List lst) {  // 有什么值得改进的？
-    printf("[");
-    for (auto curr = lst.front(); curr; curr = curr->next.get()) {
-        printf(" %d", curr->value);
-    }
-    printf(" ]\n");
+void print(List const &lst) {  // 有什么值得改进的？
+    for (auto curr = lst.front(); curr; curr = curr->next.get()) 
+        printf("this: %p prev: %p next: %p value: %d\n",
+            curr, curr->prev, curr->next.get(), curr->value);
 }
 
 int main() {
