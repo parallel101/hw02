@@ -8,7 +8,7 @@ struct Node
 {
     // 这两个指针会造成什么问题？请修复
     std::unique_ptr<Node> next;
-    Node*                 prev;
+    Node*                 prev = nullptr;
     // 如果能改成 unique_ptr 就更好了!
 
     T value;
@@ -18,7 +18,7 @@ struct Node
 
     void insert(T val)
     {
-        auto node = std::make_unique<Node>(std::move(val));
+        auto node = std::make_unique<Node<T>>(std::move(val));
 
         node->prev = prev;
         if (next) next->prev = node.get();
