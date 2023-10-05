@@ -5,8 +5,8 @@
 template <class value_type>
 struct Node
 {
-	std::shared_ptr<Node> next;
-	std::weak_ptr<Node> prev;
+	std::unique_ptr<Node> next;
+	Node* prev;
 	// 如果能改成 unique_ptr 就更好了!
 
 	value_type value;
@@ -15,21 +15,11 @@ struct Node
 	explicit Node(value_type val) : value(val)
 	{}
 
-	void insert(value_type val) {
-		auto node = std::make_shared<Node>(val);
-		node->next = next;
-		node->prev = prev;
-		if (prev.lock())
-			prev.lock()->next = node;
-		if (next)
-			next->prev = node;
-	}
-
 	void erase() {
-		if (prev.lock())
-			prev.lock()->next = next;
 		if (next)
 			next->prev = prev;
+		if (prev)
+			prev->next = std::move(next);
 	}
 
 	~Node() {
@@ -80,17 +70,17 @@ struct List
 	};
 
 public:
-	std::shared_ptr<node_type> head;
-	std::weak_ptr<node_type> back;
+	std::unique_ptr<node_type> head;
+	node_type* back;
 	List() = default;
 
 	List(List const& other) {
 		printf("List 被拷贝！\n");
 
 		// 请实现拷贝构造函数为 **深拷贝**
-		head = std::make_shared<node_type>(other.begin()->value);
-		back = head;
-		for (auto it = ++other.begin(); it != other.end(); ++it) {
+		head = std::make_unique<node_type>(other.cbegin()->value);
+		back = head.get();
+		for (auto it = ++other.cbegin(); it != other.cend(); ++it) {
 			push_back(it->value);
 		}
 	}
@@ -106,23 +96,25 @@ public:
 
 	T pop_front() {
 		T ret = head->value;
-		head = head->next;
+		head = std::move(head->next);
 		return ret;
 	}
 
 	void push_front(const T& value) {
-		auto node = std::make_shared<node_type>(value);
-		node->next = head;
+		auto node = std::make_unique<node_type>(value);
 		if (head)
-			head->prev = node;
-		head = node;
+			head->prev = node.get();
+		else
+			back = node.get();
+		node->next = std::move(head);
+		head = std::move(node);
 	}
 
 	void push_back(const T& value) {
-		auto node = std::make_shared<node_type>(value);
+		auto node = std::make_unique<node_type>(value);
 		node->prev = back;
-		back.lock()->next = node;
-		back = node;
+		back->next = std::move(node);
+		back = back->next.get();
 	}
 
 	node_type* at(size_t index) const {
@@ -133,10 +125,13 @@ public:
 		return curr;
 	}
 
-	list_iterator begin() const { return list_iterator(head.get()); }
+	list_iterator cbegin() const { return list_iterator(head.get()); }
 
-	list_iterator end() const { return list_iterator(nullptr); }
+	list_iterator cend() const { return list_iterator(nullptr); }
 
+	//TODO:非const的begin(),end()
+	//TODO:shared_ptr改unique_ptr
+	//TODO:end(),back实现修改，返回值依然是nullptr，但可以--
 };
 
 template <class T>
