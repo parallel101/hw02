@@ -4,32 +4,32 @@
 
 struct Node {
     // 这两个指针会造成什么问题？请修复
-    std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;
+    // 可能会导致循环引用，内存资源无法正常释放
+    std::unique_ptr<Node> next;
+    Node* prev;
     // 如果能改成 unique_ptr 就更好了!
 
     int value;
 
     // 这个构造函数有什么可以改进的？
-    Node(int val) {
-        value = val;
-    }
+    explicit Node(int value) : value(value) 
+    {}
 
     void insert(int val) {
-        auto node = std::make_shared<Node>(val);
-        node->next = next;
+        auto node = std::make_unique<Node>(val);
+        if (next) 
+            next->prev = node.get();
+        node->next = std::move(next);
         node->prev = prev;
         if (prev)
-            prev->next = node;
-        if (next)
-            next->prev = node;
+            prev->next = std::move(node);
     }
 
     void erase() {
-        if (prev)
-            prev->next = next;
         if (next)
             next->prev = prev;
+        if (prev) 
+            prev->next = std::move(next);
     }
 
     ~Node() {
@@ -38,14 +38,31 @@ struct Node {
 };
 
 struct List {
-    std::shared_ptr<Node> head;
+    std::unique_ptr<Node> head;
 
     List() = default;
 
     List(List const &other) {
         printf("List 被拷贝！\n");
-        head = other.head;  // 这是浅拷贝！
+        // head = other.head;  // 这是浅拷贝！
         // 请实现拷贝构造函数为 **深拷贝**
+        if (other.head == nullptr) {
+            head = nullptr;
+        } else {
+            head = std::make_unique<Node>(other.head->value);
+            Node* ptr_new = head.get();
+            Node* ptr_pre = other.head.get();
+
+            while (ptr_pre->next) {
+                ptr_new->next = std::make_unique<Node>(ptr_pre->next->value);
+                ptr_new->next->prev = ptr_new;
+
+                ptr_new = ptr_new->next.get();
+                ptr_pre = ptr_pre->next.get();
+            }
+            
+        }
+        
     }
 
     List &operator=(List const &) = delete;  // 为什么删除拷贝赋值函数也不出错？
@@ -59,16 +76,16 @@ struct List {
 
     int pop_front() {
         int ret = head->value;
-        head = head->next;
+        head = std::move(head->next);
         return ret;
     }
 
     void push_front(int value) {
-        auto node = std::make_shared<Node>(value);
-        node->next = head;
+        auto node = std::make_unique<Node>(value);
         if (head)
-            head->prev = node;
-        head = node;
+            head->prev = node.get();
+        node->next = std::move(head);
+        head = std::move(node);
     }
 
     Node *at(size_t index) const {
@@ -80,7 +97,7 @@ struct List {
     }
 };
 
-void print(List lst) {  // 有什么值得改进的？
+void print(List const &lst) {  // 有什么值得改进的？
     printf("[");
     for (auto curr = lst.front(); curr; curr = curr->next.get()) {
         printf(" %d", curr->value);
